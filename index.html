@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>NHL Pistekone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Saira:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: rink-side bench card — sticky game-night strip, the lineup drawn on a half rink, scouting tables below each tab. */
+:root{
+  --bg:#E4EAEF; --surface:#FFFFFF; --sunk:#EDF2F5; --ink:#14202B; --muted:#596876; --line:#D0DAE2;
+  --ice:#F4F8FA; --ice-edge:#BBCAD4; --crease:#CFE3F3; --blue:#2152A3; --red:#C23B3B;
+  --accent:#2152A3; --accent-ink:#FFFFFF; --accent-soft:#DCE6F5; --bar:#D6E2F2;
+  --tok:#FFFFFF; --tok-ink:#14202B; --tok-mut:#596876;
+  --good:#1D7A4C; --warn:#A86A12; --bad:#B23B3B; --good-soft:#DCF0E4; --warn-soft:#F6EAD3; --bad-soft:#F7E0DE;
+  --f-display:"Saira Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Saira",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1A25; --surface:#142434; --sunk:#1A2D3F; --ink:#E5ECF2; --muted:#93A4B3; --line:#25394B;
+  --ice:#D3DFE6; --ice-edge:#8FA6B6; --crease:#A9C8E2; --blue:#2A5FB8; --red:#B8363A;
+  --accent:#7FA8FF; --accent-ink:#0E1A25; --accent-soft:#1F3656; --bar:#22406A;
+  --tok:#F7FAFC; --tok-ink:#14202B; --tok-mut:#55636F;
+  --good:#5FD39A; --warn:#E3A84A; --bad:#FF8A80; --good-soft:#163527; --warn-soft:#382B15; --bad-soft:#3A1E1C; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1A25; --surface:#142434; --sunk:#1A2D3F; --ink:#E5ECF2; --muted:#93A4B3; --line:#25394B;
+  --ice:#D3DFE6; --ice-edge:#8FA6B6; --crease:#A9C8E2; --blue:#2A5FB8; --red:#B8363A;
+  --accent:#7FA8FF; --accent-ink:#0E1A25; --accent-soft:#1F3656; --bar:#22406A;
+  --tok:#F7FAFC; --tok-ink:#14202B; --tok-mut:#55636F;
+  --good:#5FD39A; --warn:#E3A84A; --bad:#FF8A80; --good-soft:#163527; --warn-soft:#382B15; --bad-soft:#3A1E1C; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.strip-in{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:27px;line-height:1}
+.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);margin-top:3px}
+.night{display:flex;align-items:baseline;gap:8px;padding:6px 11px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink)}
+.night b{font-family:var(--f-display);font-size:22px;line-height:1}
+.night span{font-size:12px;opacity:.9}
+nav.tabs{display:flex;gap:2px;margin-left:auto;overflow-x:auto;max-width:100%}
+nav.tabs button{font:600 14px var(--f-body);background:none;border:0;color:var(--muted);padding:8px 12px;border-radius:var(--r);cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);background:var(--sunk)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{padding-block:18px 56px}
+h2{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0;line-height:1.1;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:18px;margin:0;line-height:1.2}
+.lede{color:var(--muted);max-width:70ch;margin:4px 0 0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.ctrls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
+.ctrl{display:flex;flex-direction:column;gap:3px}
+.ctrl label{font-size:12px;font-weight:500;color:var(--muted)}
+input,select{font:14px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:7px 9px}
+input[type=number]{width:90px;font-family:var(--f-mono)}
+.btn{font:600 13px var(--f-body);border-radius:var(--r);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;cursor:pointer}
+.btn:hover{background:var(--sunk)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.small{padding:4px 9px;font-size:12px}
+.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--accent-soft);color:var(--accent)}
+.notice{border:1px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:12px 14px}
+.empty{padding:28px 18px;text-align:center;color:var(--muted)}
+
+/* rink */
+.rink{position:relative;background:var(--ice);border:3px solid var(--ice-edge);border-top-width:0;border-radius:0 0 110px 110px / 0 0 80px 80px;
+  display:grid;grid-template-rows:repeat(var(--rows,4),auto);row-gap:14px;padding:22px 10px 92px;min-height:480px;align-content:space-between}
+.rink svg{position:absolute;inset:0;width:100%;height:100%}
+.rrow{position:relative;display:flex;justify-content:center;gap:clamp(6px,1.6vw,12px)}
+.tok{width:clamp(96px,30%,162px);background:var(--tok);color:var(--tok-ink);border:1px solid var(--ice-edge);border-radius:7px;padding:7px 9px 8px;
+  box-shadow:0 2px 0 rgba(20,32,43,.13);position:relative;text-align:left;cursor:pointer;font:inherit}
+.tok .top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tok-mut)}
+.tok .ps{font:600 12px/1 var(--f-display);color:#fff;background:var(--blue);border-radius:4px;padding:3px 5px 2px}
+.tok.g .ps{background:var(--red)}
+.tok .nm{display:block;margin-top:4px;font:700 clamp(16px,2vw,19px)/1.05 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tok .op{display:block;font-size:12px;color:var(--tok-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tok .bt{display:flex;justify-content:space-between;align-items:baseline;margin-top:3px}
+.tok .xp{font:700 clamp(19px,2.4vw,24px)/1 var(--f-display);font-variant-numeric:tabular-nums}
+.tok .pr{font:500 12px/1 var(--f-mono);color:var(--tok-mut)}
+.tok .flag{position:absolute;top:-9px;left:8px;background:var(--warn);color:#14202B;font:600 11px/1 var(--f-body);padding:3px 6px;border-radius:4px}
+.tok .lock{position:absolute;top:-9px;right:8px;background:var(--blue);color:#fff;font:600 11px/1 var(--f-body);padding:3px 6px;border-radius:4px}
+.tok.new{border:2px solid var(--blue)}
+@media (max-width:480px){.rink{padding:14px 5px 80px;border-radius:0 0 64px 64px / 0 0 56px 56px;min-height:0}.tok{padding:6px 6px 7px}.tok .pr{display:none}}
+
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--sunk);border-radius:var(--r);padding:8px 10px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font:700 26px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.alt{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;background:var(--surface);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.alt[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.alt .mv{font-size:13px}.alt .out{color:var(--bad);text-decoration:line-through}.alt .in{color:var(--good);font-weight:600}
+.alt .gain{font:700 24px/1 var(--f-display);text-align:right}
+.alt .gain small{display:block;font:500 12px var(--f-body);color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.meter{height:9px;border-radius:5px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+
+/* tables */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:12px;font-weight:500;color:var(--muted);background:var(--sunk);position:sticky;top:0;cursor:pointer;user-select:none;z-index:1}
+th.l,td.l{text-align:left}
+tbody tr:hover{background:var(--sunk)}
+tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+td.x{font:700 15px/1 var(--f-display);font-variant-numeric:tabular-nums;background:linear-gradient(90deg,var(--bar) var(--w,0%),transparent var(--w,0%))}
+.ps2{display:inline-block;min-width:30px;text-align:center;font:600 12px/1 var(--f-display);padding:4px 5px 3px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.pn{font-weight:600}
+.pc{display:block;font:600 14px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.oc{display:block;font:400 11px var(--f-mono);color:var(--muted)}
+td.cell{cursor:pointer}
+td.cell.has{background:var(--accent-soft)}
+.edge{font:600 12px var(--f-mono)}.edge.pos{color:var(--good)}.edge.neg{color:var(--bad)}
+.gcard{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.game{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.score{font:700 30px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.vs{display:flex;justify-content:space-between;align-items:baseline}
+.split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
+.split i{display:block;height:100%}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-family:var(--f-mono);text-align:right}
+
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(420px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:20;overflow-y:auto;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 16px;box-shadow:-8px 0 30px rgba(0,0,0,.18)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:19}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bars .b{display:grid;grid-template-columns:110px minmax(0,1fr) 52px;gap:8px;align-items:center;font-size:13px}
+.bars .b i{display:block;height:10px;border-radius:3px;background:var(--accent)}
+.bars .b i.neg{background:var(--bad)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:var(--r);z-index:30}
+.oddsin{width:76px}
+@media (prefers-reduced-motion:no-preference){.tok{transition:transform .12s ease}.tok:hover{transform:translateY(-2px)}}
+</style>
+</head>
+<body>
+<header class="strip">
+  <div class="wrap strip-in">
+    <div class="brand">Pistekone<small>NHL päivittäisfantasy</small></div>
+    <div class="night" id="night"><b>–</b><span>ei dataa</span></div>
+    <nav class="tabs" role="tablist" aria-label="Näkymät">
+      <button role="tab" data-tab="lineup" aria-selected="true">Kokoonpano</button>
+      <button role="tab" data-tab="players" aria-selected="false">Pelaajat</button>
+      <button role="tab" data-tab="goalies" aria-selected="false">Maalivahdit</button>
+      <button role="tab" data-tab="games" aria-selected="false">Ottelut</button>
+      <button role="tab" data-tab="bets" aria-selected="false">Vedonlyönti</button>
+      <button role="tab" data-tab="data" aria-selected="false">Data ja malli</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="noData" class="notice stack" hidden>
+    <b>Illan dataa ei ole vielä ladattu.</b>
+    <span class="vw" hidden>Illan luvut päivitetään ennen otteluita. Sivu päivittyy itsestään, kun uudet luvut tulevat.</span>
+    <span class="own">Aja koneellasi <span class="mono">run_dfs.bat</span> ja lataa kansiosta <span class="mono">output_daily</span> tiedostot
+      <span class="mono">expected_points_per_game.csv</span> ja <span class="mono">expected_games.csv</span> välilehdellä Data ja malli.</span>
+    <span class="row own"><button class="btn primary small" data-go="data">Lataa illan data</button></span>
+  </div>
+  <div id="staleNote" class="notice" hidden></div>
+
+  <!-- KOKOONPANO -->
+  <section id="tab-lineup" class="stack">
+    <div class="panel ctrls">
+      <div class="ctrl"><label for="budget">Budjetti</label><input id="budget" type="number" step="0.1" min="0" value="107"></div>
+      <div class="ctrl"><label for="maxTeam">Samasta joukkueesta enintään</label><select id="maxTeam"><option>2</option><option>3</option><option selected>4</option><option>5</option><option value="0">Ei rajaa</option></select></div>
+      <div class="ctrl"><label for="nAlt">Vaihtoehtoja</label><select id="nAlt"><option value="1">Vain paras</option><option value="3" selected>3</option><option value="5">5</option></select></div>
+      <div class="ctrl" style="flex:1;min-width:220px"><label>Lukitut ja poistetut</label><div class="chips" id="lockChips"><span class="muted">Ei yhtään. Lukitse tai poista pelaajia Pelaajat-välilehdellä.</span></div></div>
+    </div>
+    <div class="grid2">
+      <div class="stack">
+        <div class="row" style="justify-content:space-between"><h2 id="luTitle">Paras kokoonpano</h2><span class="muted" id="luRules"></span></div>
+        <div id="rink"></div>
+      </div>
+      <div class="stack">
+        <div class="sum" id="sum"></div>
+        <div class="panel stack" id="teamsBox"></div>
+        <div class="stack" id="alts"></div>
+        <p class="muted" style="margin:0" id="solveNote"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PELAAJAT -->
+  <section id="tab-players" class="stack" hidden>
+    <div><h2>Pelaajat</h2><p class="lede">Odotetut fantasypisteet tämän illan otteluun. Lukitse pelaaja kokoonpanoon tai poista hänet; optimoija laskee kokoonpanon heti uudelleen. Klikkaa nimeä nähdäksesi pisteiden erittelyn.</p></div>
+    <div class="panel ctrls">
+      <div class="ctrl"><label for="fPos">Pelipaikka</label><select id="fPos"><option value="">Kaikki kenttäpelaajat</option><option value="C">Keskushyökkääjät</option><option value="W">Laitahyökkääjät</option><option value="D">Puolustajat</option></select></div>
+      <div class="ctrl"><label for="fTeam">Joukkue</label><select id="fTeam"><option value="">Kaikki</option></select></div>
+      <div class="ctrl"><label for="fPrice">Hinta enintään</label><input id="fPrice" type="number" step="0.5" value="25"></div>
+      <div class="ctrl"><label for="fSearch">Haku</label><input id="fSearch" type="search" placeholder="Nimi"></div>
+      <div class="ctrl"><label for="fAvail">Pelaaminen</label><select id="fAvail"><option value="ok" selected>Piilota pois jäävät</option><option value="all">Näytä kaikki</option></select></div>
+    </div>
+    <div class="tw" style="max-height:72vh"><table id="ptable"></table></div>
+  </section>
+
+  <!-- MAALIVAHDIT -->
+  <section id="tab-goalies" class="stack" hidden>
+    <div><h2>Maalivahdit</h2><p class="lede">xPTS on kerrottu aloitustodennäköisyydellä. "Jos aloittaa" näyttää arvon, kun aloittaja on vahvistettu. Voitto, laukaukset ja päästetyt ovat ehdollisia sille, että juuri tämä maalivahti aloittaa.</p></div>
+    <div class="tw"><table id="gtable"></table></div>
+  </section>
+
+  <!-- OTTELUT -->
+  <section id="tab-games" class="stack" hidden>
+    <div><h2>Illan ottelut</h2><p class="lede">Odotetut maalit varsinaisella peliajalla. Malli = mallin oma näkemys, markkina = sovitettu Pinnaclen voitto- ja maalimääräkertoimiin. Fantasyluvut käyttävät markkinaversiota, kun se on saatavilla.</p></div>
+    <div class="gcard" id="gamesGrid"></div>
+  </section>
+
+  <!-- VEDONLYÖNTI -->
+  <section id="tab-bets" class="stack" hidden>
+    <div><h2>Vedonlyönti</h2><p class="lede">Mallin todennäköisyys ja reilu kerroin (1 / todennäköisyys). Klikkaa solua ja syötä vedonvälittäjän kerroin, niin näet arvon (todennäköisyys × kerroin − 1). Pelaajien luvut olettavat, että pelaaja pelaa. Pinnacle on tarkka markkina: suuri ero siihen on useammin mallin virhe kuin etu. Tämä ei ole peliohje.</p></div>
+    <div class="panel stack" id="myOdds"></div>
+    <h3>Ottelut</h3>
+    <div class="tw"><table id="btGames"></table></div>
+    <h3>Pelaajat</h3>
+    <div class="panel ctrls">
+      <div class="ctrl"><label for="bTeam">Joukkue</label><select id="bTeam"><option value="">Kaikki</option></select></div>
+      <div class="ctrl"><label for="bSearch">Haku</label><input id="bSearch" type="search" placeholder="Nimi"></div>
+      <div class="ctrl"><label for="bMin">Pisteodottama vähintään</label><input id="bMin" type="number" step="0.05" value="0.4"></div>
+    </div>
+    <div class="tw" style="max-height:72vh"><table id="btPlayers"></table></div>
+  </section>
+
+  <!-- DATA -->
+  <section id="tab-data" class="stack" hidden>
+    <div><h2>Data ja malli</h2><p class="lede" id="dataStamp">Ei dataa.</p></div>
+    <div class="grid2">
+      <div class="panel stack vw" hidden>
+        <h3>Illan luvut</h3>
+        <p style="margin:0">Luvut tulevat sivun ylläpitäjän mallista ja päivittyvät tälle sivulle automaattisesti. Kokoonpanon lukitukset, poistot ja omat kertoimesi tallentuvat vain omaan selaimeesi.</p>
+      </div>
+      <div class="panel stack own">
+        <h3>Päivitä illan data</h3>
+        <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+          <li>Aja koneellasi <span class="mono">.\run_dfs.bat budjetti</span>, lähellä lukitusta, kun aloittavat maalivahdit on vahvistettu.</li>
+          <li>Valitse alta kansiosta <span class="mono">output_daily</span> molemmat tiedostot: <span class="mono">expected_points_per_game.csv</span> ja <span class="mono">expected_games.csv</span>.</li>
+          <li>Sivu laskee kokoonpanot ja todennäköisyydet uudelleen ja tallentaa datan, jolloin se näkyy myös puhelimessa.</li>
+        </ol>
+        <input id="csvFiles" type="file" accept=".csv,text/csv" multiple aria-label="Mallin tulostiedostot">
+        <p class="muted" style="margin:0" id="dataMsg"></p>
+      </div>
+      <div class="panel stack">
+        <h3>Miten luvut syntyvät</h3>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
+          <li><b>Pelaajat:</b> laukaukset, laukausyritykset, syötöt ja blokit per 60 min kolmelta kaudelta (painot 1.5 / 0.6 / 0.3), kalibroitu oikealla datalla. Viimeistely omasta xG:stä laukausta kohden.</li>
+          <li><b>Rooli ja jääaika:</b> Daily Faceoffin ketju, pari ja ylivoimakenttä sekä pelaajan jääaikahistoria. Ketjukaverit vaikuttavat syöttöihin.</li>
+          <li><b>Ottelu:</b> joukkueiden xG-voima, vastustajan maalivahti, kotietu sekä Pinnaclen voitto- ja maalimäärälinjat.</li>
+          <li><b>Maalivahdit:</b> laukaukset vastaan, päästetyt, voitto, 35+ torjuntaa ja nollapeli ehdollisena aloitukselle; aloitustodennäköisyys Daily Faceoffin aloittajasivulta.</li>
+          <li><b>Kokoonpano:</b> tarkka haku käy läpi kaikki sääntöjen sallimat yhdistelmät (1 MV, 2 P, 6 H, joista 2–3 KH ja 3–4 LH, budjetti, joukkueraja). Tulos on paras mahdollinen näillä xPTS-luvuilla.</li>
+          <li><b>Vedonlyönti:</b> pisteet negatiivisella binomijakaumalla (r = 12), laukaukset r = 8, maalit Poisson. Kalibroitu kauden 2025–26 pelikohtaisella datalla: maalit ja laukaukset ±1 %, pisteet 2–6 % alakanttiin.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="scrim" class="scrim" hidden></div>
+<aside id="drawer" class="drawer" hidden aria-label="Pelaajan tiedot"></aside>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+(function(){
+"use strict";
+// ---------- tila ----------
+const RULES={G:[1,1],D:[2,2],F:6,C:[2,3],W:[3,4]};
+const POSFI={G:"MV",D:"P",C:"KH",W:"LH"};
+const S={ds:null,P:[],byId:{},games:[],locks:new Set(),excl:new Set(),sols:[],solIdx:0,odds:{},sortP:{k:"x",d:-1},sortB:{k:"mp",d:-1},sortG:{k:"x",d:-1},db:null,user:null,isOwner:false};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const f1=v=>v==null||isNaN(v)?"–":(+v).toFixed(1), f2=v=>v==null||isNaN(v)?"–":(+v).toFixed(2);
+const pct=v=>v==null||isNaN(v)?"–":Math.round(v*100)+" %";
+const fair=p=>p>1e-9?(1/p).toFixed(2):"–";
+function store(k,v){try{localStorage.setItem("pk:"+k,JSON.stringify(v))}catch(e){}}
+function load(k,d){try{const v=localStorage.getItem("pk:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2600)}
+
+// ---------- CSV -> datasetti (sama muoto kuin tietokannassa) ----------
+function parseCSV(text){
+  text=text.replace(/^﻿/,"");
+  const rows=[];let row=[],cur="",q=false;
+  for(let i=0;i<text.length;i++){const ch=text[i];
+    if(q){if(ch=='"'){if(text[i+1]=='"'){cur+='"';i++}else q=false}else cur+=ch}
+    else if(ch=='"')q=true;else if(ch==','){row.push(cur);cur=""}else if(ch=='\n'||ch=='\r'){if(ch=='\r'&&text[i+1]=='\n')i++;row.push(cur);rows.push(row);row=[];cur=""}else cur+=ch}
+  if(cur.length||row.length){row.push(cur);rows.push(row)}
+  const h=rows.shift().map(s=>s.trim());
+  return rows.filter(r=>r.length>1).map(r=>Object.fromEntries(h.map((k,i)=>[k,r[i]])));
+}
+const num=v=>{if(v==null||v==="")return null;const x=+v;return isNaN(x)?null:x};
+const rnd=(v,n=3)=>v==null?null:Math.round(v*10**n)/10**n;
+const FIELDS=["id","fn","ln","club","pos","price","x","xi","av","opp","line","pair","pp","toiES","toiPP","mg","ma","ms","mb","mp","ps5","pb3","pp3","mateES","matePP","pw","sa","ga","sv","s35","so","c1","c2","c3","c4","c5","games","toiSH"];
+function buildDataset(pgRows,gmRows){
+  const POS={center:"C",winger:"W",defender:"D",goalkeeper:"G"};
+  const by=new Map();for(const r of pgRows){const k=r.PlayerID;if(!by.has(k))by.set(k,[]);by.get(k).push(r)}
+  const players=[];
+  for(const [pid,g] of by){const a=g[0],P=POS[a.Position]||"W",G=P==="G";const sum=c=>g.reduce((s,r)=>s+(num(r[c])||0),0);
+    players.push([+pid,a.FName,a.Name,a.Club,P,rnd(num(a.Price),2),rnd(sum("e_pts")),rnd(sum(G?"e_pts_if_starts":"e_pts_if_plays")),rnd(num(G?a.p_start:a.avail)),
+      g.map(r=>r.opp_str||r.opp).join(" "),rnd(num(a.line),0),rnd(num(a.pair),0),rnd(num(a.pp),0),rnd(num(a.toi_ES),2),rnd(num(a.toi_PP_base),2),
+      rnd(num(a.mu_g)),rnd(num(a.mu_a)),rnd(num(a.mu_sog)),rnd(num(a.mu_blk)),rnd(num(a.mu_pts)),rnd(num(a.p_sog5)),rnd(num(a.p_blk3)),rnd(num(a.p_pts3)),
+      rnd(num(a.mate_ES)),rnd(num(a.mate_PP)),rnd(num(a.p_win)),rnd(num(a.mu_sa),2),rnd(num(a.mu_ga),2),rnd(num(a.mu_sv),2),rnd(num(a.p_saves35)),rnd(num(a.p_shutout)),
+      rnd(num(G?a.pts_win:a.pts_goals),2),rnd(num(G?a.pts_otl:a.pts_assists),2),rnd(num(G?a.pts_ga:a.pts_shots),2),rnd(num(G?a.pts_saves:a.pts_blocks),2),
+      rnd(G?num(a.pts_bonus):(num(a.pts_bonus)||0)+(num(a.pts_sh)||0)+(num(a.pts_so)||0),2),g.length,rnd(num(a.toi_SH_base),2)]);
+  }
+  const games=(gmRows||[]).map(x=>[x.date,x.home,x.away,rnd(num(x.lam_home)),rnd(num(x.lam_away)),rnd(num(x.lam_home_model)),rnd(num(x.lam_away_model)),rnd(num(x.p_home_win)),rnd(num(x.p_ot)),String(x.market).toLowerCase()==="true"?1:0,x.total_src]);
+  const dates=[...new Set(pgRows.map(r=>r.date))].sort();
+  const now=new Date();const pad=n=>String(n).padStart(2,"0");
+  return {v:1,date:dates[0],days:dates.length,updated:`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`,
+    fields:FIELDS,players,gfields:["date","home","away","lh","la","lhm","lam","phw","pot","market","totsrc"],games};
+}
+
+// ---------- todennäköisyydet ----------
+function tailGE(k,mu,r){ // P(X>=k), negatiivinen binomi (r=Infinity -> Poisson)
+  if(!(mu>0))return 0;let p,s=0;
+  if(!isFinite(r)){p=Math.exp(-mu);for(let j=0;j<k;j++){s+=p;p=p*mu/(j+1)}}
+  else{const q=mu/(r+mu);p=Math.pow(r/(r+mu),r);for(let j=0;j<k;j++){s+=p;p=p*(j+r)/(j+1)*q}}
+  return Math.max(0,Math.min(1,1-s));
+}
+function scoreMatrix(lh,la){const n=13,a=[Math.exp(-lh)],b=[Math.exp(-la)];for(let k=1;k<n;k++){a.push(a[k-1]*lh/k);b.push(b[k-1]*la/k)}
+  const m=[];let s=0;for(let i=0;i<n;i++){m.push([]);for(let j=0;j<n;j++){let v=a[i]*b[j];if(i==j)v*=1.5;m[i].push(v);s+=v}}
+  for(const r of m)for(let j=0;j<n;j++)r[j]/=s;return m}
+function gameProbs(lh,la){const m=scoreMatrix(lh,la);let h=0,t=0;for(let i=0;i<13;i++)for(let j=0;j<13;j++){if(i>j)h+=m[i][j];else if(i==j)t+=m[i][j]}
+  const q=0.5+0.5*(lh/(lh+la)-0.5);return {home:h+t*q,away:1-h-t*q,ot:t}}
+function overP(lh,la,line){const m=scoreMatrix(lh,la);let o=0,u=0;for(let i=0;i<13;i++)for(let j=0;j<13;j++){const tot=i+j+(i==j?1:0);if(tot>line)o+=m[i][j];else if(tot<line)u+=m[i][j]}return o/(o+u)}
+const PROPS=[["pts1","Piste (yli 0.5)",p=>tailGE(1,p.mp,12)],["pts2","2+ pistettä (yli 1.5)",p=>tailGE(2,p.mp,12)],["goal","Maali",p=>tailGE(1,p.mg,Infinity)],
+  ["sog3","3+ laukausta (yli 2.5)",p=>tailGE(3,p.ms,8)],["sog4","4+ laukausta (yli 3.5)",p=>tailGE(4,p.ms,8)]];
+
+// ---------- datasetin käyttöönotto ----------
+function useDataset(ds){
+  S.ds=ds;const F=ds.fields;
+  S.P=ds.players.map(r=>{const o={};F.forEach((k,i)=>o[k]=r[i]);o.name=(o.fn+" "+o.ln).trim();o.pp=o.pp||0;o.av=o.av??1;o.x=o.x||0;
+    o.ppx=o.price>0?o.x/o.price:0;if(o.pos!=="G"&&o.games===1)for(const [k,,f] of PROPS)o["p_"+k]=f(o);return o});
+  S.byId=Object.fromEntries(S.P.map(p=>[p.id,p]));
+  S.games=(ds.games||[]).map(r=>{const o={};ds.gfields.forEach((k,i)=>o[k]=r[i]);return o});
+  const key="sel:"+ds.date;const sel=load(key,{l:[],e:[]});
+  S.locks=new Set(sel.l.filter(id=>S.byId[id]));S.excl=new Set(sel.e.filter(id=>S.byId[id]));
+  S.odds=load("odds:"+ds.date,{});
+  const teams=[...new Set(S.P.map(p=>p.club))].sort();
+  for(const id of ["#fTeam","#bTeam"]){const el=$(id);el.innerHTML='<option value="">Kaikki</option>'+teams.map(t=>`<option>${esc(t)}</option>`).join("")}
+  const d=new Date(ds.date+"T12:00:00");
+  $("#night").innerHTML=`<b>${d.getDate()}.${d.getMonth()+1}.</b><span>${S.games.length||"?"} ottelua · ${S.P.length} pelaajaa</span>`;
+  $("#dataStamp").textContent=`Ottelupäivä ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()} (NHL:n aika). Mallin ajo ladattu ${ds.updated.replace("T"," klo ").replace(/-(\d\d)-(\d\d)/,(m,a,b)=>"-"+a+"-"+b)}. ${S.P.length} pelaajaa, ${S.games.length} ottelua.`;
+  $("#noData").hidden=true;
+  try{const today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York"}).format(new Date());const el=$("#staleNote");
+    if(ds.date<today){const [y,m,dd]=ds.date.split("-");el.textContent=`Luvut ovat ${+dd}.${+m}. otteluista. Tämän illan luvut eivät ole vielä tulleet.`;el.hidden=false}else el.hidden=true}catch(e){}
+  solve();renderAll();
+}
+function saveSel(){if(S.ds)store("sel:"+S.ds.date,{l:[...S.locks],e:[...S.excl]})}
+
+// ---------- optimoija: tarkka haku ----------
+// MV x puolustajapari luetellaan (raja-arvon mukaan järjestyksessä); hyökkääjät haarautuvalla haulla, jonka ylärajana
+// on dynaamisen ohjelmoinnin taulukko (budjetti x KH x LH, joukkueraja höllennetty). Pitää K parasta erilaista kokoonpanoa.
+function optimize(budget,cap,K){
+  const t0=performance.now();
+  const ok=p=>!S.excl.has(p.id)&&(S.locks.has(p.id)||(p.av>0&&p.x>0));
+  const pool=S.P.filter(ok);
+  const unit=10, B=Math.floor(budget*unit+1e-6);
+  const cost=p=>Math.round(p.price*unit);
+  const G=pool.filter(p=>p.pos==="G"),D=pool.filter(p=>p.pos==="D");
+  const F=pool.filter(p=>p.pos==="C"||p.pos==="W").sort((a,b)=>b.x-a.x);
+  const lockG=G.filter(p=>S.locks.has(p.id)),lockD=D.filter(p=>S.locks.has(p.id)),lockF=F.filter(p=>S.locks.has(p.id));
+  if(lockG.length>1||lockD.length>2||lockF.length>6)return {sols:[],err:"Liikaa lukittuja pelaajia samaan pelipaikkaan."};
+  const nC=RULES.C[1],nW=RULES.W[1],n=F.length,SZ=(B+1)*(nC+1)*(nW+1);
+  const idx=(b,c,w)=>(b*(nC+1)+c)*(nW+1)+w;
+  const NEG=-1e9;
+  // V[k]: paras arvo hyökkääjistä k.. kun budjettia b jäljellä ja valittu c KH + w LH (lopussa 6, KH 2-3, LH 3-4)
+  const V=new Array(n+1);
+  V[n]=new Float32Array(SZ).fill(NEG);
+  for(let b=0;b<=B;b++)for(let c=0;c<=nC;c++)for(let w=0;w<=nW;w++)if(c+w===RULES.F&&c>=RULES.C[0]&&w>=RULES.W[0])V[n][idx(b,c,w)]=0;
+  for(let k=n-1;k>=0;k--){const p=F[k],nx=V[k+1],cur=new Float32Array(SZ),pc=cost(p),isC=p.pos==="C",must=S.locks.has(p.id);
+    for(let b=0;b<=B;b++)for(let c=0;c<=nC;c++)for(let w=0;w<=nW;w++){const i=idx(b,c,w);let take=NEG;
+      if(pc<=b){const c2=isC?c+1:c,w2=isC?w:w+1;if(c2<=nC&&w2<=nW){const v=nx[idx(b-pc,c2,w2)];if(v>NEG/2)take=v+p.x}}
+      cur[i]=must?take:Math.max(nx[i],take)}
+    V[k]=cur}
+  const cp=cap>0?cap:99;
+  // MV x pari -yhdistelmät
+  const gList=lockG.length?lockG:G;
+  const pairs=[];
+  for(let i=0;i<D.length;i++)for(let j=i+1;j<D.length;j++){const a=D[i],b=D[j];
+    if(lockD.length&&!lockD.every(l=>l===a||l===b))continue;pairs.push([a,b])}
+  const combos=[];
+  for(const g of gList)for(const [a,b] of pairs){const c=cost(g)+cost(a)+cost(b);if(c>B)continue;
+    const tc={};for(const p of [g,a,b])tc[p.club]=(tc[p.club]||0)+1;if(Math.max(...Object.values(tc))>cp)continue;
+    const v=g.x+a.x+b.x,ub=v+V[0][idx(B-c,0,0)];if(ub<NEG/2)continue;combos.push({g,a,b,c,v,ub,tc})}
+  combos.sort((x,y)=>y.ub-x.ub);
+  const best=[];let kth=-Infinity;const seen=new Set();
+  function add(val,ids){const key=ids.slice().sort((x,y)=>x-y).join(",");if(seen.has(key))return;seen.add(key);
+    best.push({val,ids});best.sort((x,y)=>y.val-x.val);if(best.length>K)best.pop();if(best.length===K)kth=best[K-1].val}
+  let nodes=0;const LIM=4e6;
+  const chosen=[];
+  function dfs(k,b,c,w,acc,tc,base){
+    if(++nodes>LIM)return;
+    const ub=V[k][idx(b,c,w)];if(ub<NEG/2||acc+ub+1e-3<=kth)return;
+    if(k===n){add(acc,base.concat(chosen));return}
+    const p=F[k],pc=cost(p),isC=p.pos==="C";
+    if(pc<=b&&(isC?c<nC:w<nW)&&(tc[p.club]||0)<cp){chosen.push(p.id);tc[p.club]=(tc[p.club]||0)+1;
+      dfs(k+1,b-pc,isC?c+1:c,isC?w:w+1,acc+p.x,tc,base);tc[p.club]--;chosen.pop()}
+    if(!S.locks.has(p.id))dfs(k+1,b,c,w,acc,tc,base)}
+  for(const cb of combos){if(cb.ub+1e-3<=kth)break;if(nodes>LIM)break;dfs(0,B-cb.c,0,0,cb.v,{...cb.tc},[cb.g.id,cb.a.id,cb.b.id])}
+  return {sols:best,exact:nodes<=LIM,ms:Math.round(performance.now()-t0),combos:combos.length}
+}
+function solve(){
+  if(!S.ds)return;
+  const budget=+$("#budget").value||0,capv=+$("#maxTeam").value,K=+$("#nAlt").value;
+  store("ui",{budget,cap:capv,K});
+  const r=optimize(budget,capv,K);
+  S.sols=r.sols;S.solIdx=0;S.solveInfo=r;
+}
+
+// ---------- piirto: kokoonpano ----------
+const RINK=`<svg viewBox="0 0 400 500" preserveAspectRatio="none" aria-hidden="true">
+<rect x="0" y="0" width="400" height="7" fill="var(--red)"/><path d="M155 0 A45 45 0 0 0 245 0" fill="none" stroke="var(--blue)" stroke-width="2"/>
+<rect x="0" y="168" width="400" height="11" fill="var(--blue)" opacity=".85"/>
+<circle cx="92" cy="128" r="5" fill="var(--red)"/><circle cx="308" cy="128" r="5" fill="var(--red)"/>
+<circle cx="100" cy="330" r="50" fill="none" stroke="var(--red)" stroke-width="2" opacity=".55"/><circle cx="300" cy="330" r="50" fill="none" stroke="var(--red)" stroke-width="2" opacity=".55"/>
+<circle cx="100" cy="330" r="5" fill="var(--red)"/><circle cx="300" cy="330" r="5" fill="var(--red)"/>
+<line x1="14" y1="446" x2="386" y2="446" stroke="var(--red)" stroke-width="2"/>
+<path d="M164 446 A36 36 0 0 1 236 446 Z" fill="var(--crease)" stroke="var(--red)" stroke-width="1.5"/>
+<rect x="184" y="446" width="32" height="12" rx="2" fill="none" stroke="var(--red)" stroke-width="2"/></svg>`;
+function roleText(p){if(p.pos==="G")return p.av!=null?`aloittaa ${pct(p.av)}`:"";const a=[];
+  if(p.pos==="D"&&p.pair)a.push(p.pair+". pari");if(p.pos!=="D"&&p.line)a.push(p.line+". ketju");
+  if(p.pp)a.push(p.pp===3?"YV1+YV2":"YV"+p.pp);return a.join(", ")}
+function formation(ps){const C=ps.filter(p=>p.pos==="C").sort((a,b)=>b.x-a.x),W=ps.filter(p=>p.pos==="W").sort((a,b)=>b.x-a.x),rows=[];
+  while(C.length||W.length){const mid=C.shift()||W.shift();const l=W.shift()||C.shift(),r=W.shift()||C.shift();rows.push([l,mid,r].filter(Boolean))}
+  rows.push(ps.filter(p=>p.pos==="D"));rows.push(ps.filter(p=>p.pos==="G"));return rows}
+function tokenHTML(p,isNew){const warn=p.pos!=="G"&&p.av<0.9?'<span class="flag">epävarma</span>':"";const lk=S.locks.has(p.id)?'<span class="lock">lukittu</span>':(isNew?'<span class="lock">vaihto</span>':"");
+  return `<button class="tok${p.pos==="G"?" g":""}${isNew?" new":""}" data-pid="${p.id}" aria-label="${esc(p.name)}, ${f1(p.x)} xPTS">${warn}${lk}
+  <div class="top"><span class="ps">${POSFI[p.pos]}</span><span>${esc(p.club)}</span></div><span class="nm">${esc(p.ln)}</span>
+  <span class="op">${esc(p.opp)}</span><span class="op">${esc(roleText(p))||"&nbsp;"}</span>
+  <div class="bt"><span class="xp">${f1(p.x)}</span><span class="pr">${f1(p.price)}</span></div></button>`}
+function renderLineup(){
+  const r=RULES,capv=+$("#maxTeam").value;
+  $("#luRules").textContent=`1 MV · 2 P · 6 H (2–3 KH, 3–4 LH)${capv?` · max ${capv}/joukkue`:""}`;
+  // lukitut
+  const lc=[...S.locks].map(id=>S.byId[id]).filter(Boolean),ex=[...S.excl].map(id=>S.byId[id]).filter(Boolean);
+  $("#lockChips").innerHTML=(lc.length||ex.length)?lc.map(p=>`<span class="pill acc">Lukittu: ${esc(p.name)} <button class="btn small" data-unlock="${p.id}" aria-label="Poista lukitus">×</button></span>`).join("")+ex.map(p=>`<span class="pill bad">Pois: ${esc(p.name)} <button class="btn small" data-unexcl="${p.id}" aria-label="Palauta">×</button></span>`).join("")+' <button class="btn small" data-act="clearsel">Tyhjennä</button>':'<span class="muted">Ei yhtään. Lukitse tai poista pelaajia Pelaajat-välilehdellä.</span>';
+  if(!S.ds){$("#rink").innerHTML='<div class="panel empty">Kokoonpano näkyy, kun illan data on ladattu.</div>';$("#sum").innerHTML="";$("#teamsBox").hidden=true;$("#alts").innerHTML="";$("#solveNote").textContent="";return}
+  const info=S.solveInfo||{};
+  if(!S.sols.length){$("#rink").innerHTML=`<div class="panel empty">${esc(info.err||"Sääntöjen mukaista kokoonpanoa ei löytynyt. Tarkista budjetti, joukkueraja ja lukitukset.")}</div>`;$("#sum").innerHTML="";$("#teamsBox").hidden=true;$("#alts").innerHTML="";$("#solveNote").textContent="";return}
+  const best=S.sols[0],sol=S.sols[S.solIdx]||best,ids=new Set(sol.ids),bestIds=new Set(best.ids);
+  const ps=sol.ids.map(id=>S.byId[id]);
+  $("#luTitle").textContent=S.solIdx===0?"Paras kokoonpano":`Vaihtoehto ${S.solIdx+1}`;
+  const rows=formation(ps);
+  $("#rink").innerHTML=`<div class="rink" style="--rows:${rows.length}">${RINK}${rows.map(rw=>`<div class="rrow">${rw.map(p=>tokenHTML(p,S.solIdx>0&&!bestIds.has(p.id))).join("")}</div>`).join("")}</div>`;
+  const price=ps.reduce((s,p)=>s+p.price,0),budget=+$("#budget").value;
+  $("#sum").innerHTML=`<div class="stat"><div class="k">xPTS</div><div class="v">${f1(sol.val)}</div></div>
+    <div class="stat"><div class="k">Hinta</div><div class="v">${f1(price)}</div></div>
+    <div class="stat"><div class="k">Jäljellä</div><div class="v">${f1(budget-price)}</div></div>
+    <div class="stat"><div class="k">xPTS / hinta</div><div class="v">${f2(sol.val/price)}</div></div>`;
+  const tc={};ps.forEach(p=>tc[p.club]=(tc[p.club]||0)+1);
+  const unsure=ps.filter(p=>p.av<0.9);
+  $("#teamsBox").hidden=false;
+  $("#teamsBox").innerHTML=`<div class="row" style="justify-content:space-between"><h3>Joukkueet</h3><span class="muted">${Object.keys(tc).length} joukkuetta</span></div>
+   <div class="chips">${Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>`<span class="pill${n>=(capv||99)?" warn":""}">${esc(t)} ${n}</span>`).join("")}</div>
+   <div class="meter" aria-label="Budjetista käytetty"><i style="width:${Math.min(100,price/budget*100).toFixed(1)}%"></i></div>
+   ${unsure.length?`<p class="muted" style="margin:0">Epävarmoja: ${unsure.map(p=>esc(p.name)+" ("+pct(p.av)+")").join(", ")}. Aja malli uudelleen lähempänä lukitusta.</p>`:""}`;
+  $("#alts").innerHTML=S.sols.length>1?S.sols.map((s,i)=>{const outs=best.ids.filter(id=>!s.ids.includes(id)).map(id=>S.byId[id]),ins=s.ids.filter(id=>!bestIds.has(id)).map(id=>S.byId[id]);
+    return `<button class="alt" data-sol="${i}" aria-pressed="${i===S.solIdx}"><div class="mv">${i===0?'<b>Paras kokoonpano</b>':`${outs.map(p=>`<span class="out">${esc(p.name)}</span>`).join(", ")} → ${ins.map(p=>`<span class="in">${esc(p.name)}</span>`).join(", ")}`}</div>
+      <div class="gain">${f1(s.val)}<small>${i===0?"xPTS":(s.val-best.val).toFixed(1)+" parhaaseen"}</small></div></button>`}).join(""):"";
+  $("#solveNote").textContent=info.exact?`Tarkka haku: ${info.combos.toLocaleString("fi")} maalivahti- ja puolustajayhdistelmää, kaikki sääntöjen sallimat hyökkääjävalinnat. Parempaa kokoonpanoa näillä luvuilla ei ole. (${info.ms} ms)`:"Haku keskeytettiin aikarajaan: tulos on hyvä mutta ei taatusti paras.";
+}
+
+// ---------- piirto: taulukot ----------
+function sortRows(rows,s){return rows.sort((a,b)=>{const x=a[s.k],y=b[s.k];if(typeof x==="string"||typeof y==="string")return String(x??"").localeCompare(String(y??""))*s.d;return((x??-1e9)-(y??-1e9))*s.d})}
+function th(cols,s,tid){return "<thead><tr>"+cols.map(([k,l,c])=>`<th class="${c||""}" data-sort="${k}" data-t="${tid}" aria-sort="${s.k===k?(s.d>0?"ascending":"descending"):"none"}">${l}${s.k===k?(s.d>0?" ▲":" ▼"):""}</th>`).join("")+"</tr></thead>"}
+function renderPlayers(){
+  if(!S.ds){$("#ptable").innerHTML='<tbody><tr><td class="empty">Ei dataa.</td></tr></tbody>';return}
+  const fp=$("#fPos").value,ft=$("#fTeam").value,fm=+$("#fPrice").value||99,q=$("#fSearch").value.toLowerCase(),fa=$("#fAvail").value;
+  const inSol=new Set((S.sols[S.solIdx]||{ids:[]}).ids);
+  let rows=S.P.filter(p=>p.pos!=="G"&&(!fp||p.pos===fp)&&(!ft||p.club===ft)&&p.price<=fm&&(!q||p.name.toLowerCase().includes(q))&&(fa==="all"||p.av>0.05));
+  rows=sortRows(rows,S.sortP);const mx=Math.max(...rows.map(p=>p.x),1);
+  const cols=[["pos","Pp","l"],["name","Pelaaja","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["role","Rooli","l"],["price","Hinta"],["x","xPTS"],["ppx","xPTS/hinta"],["toi","Jääaika"],["ms","Laukaukset"],["mp","Pisteet"],["av","Pelaa"],["act","","l"]];
+  rows.forEach(p=>{p.role=roleText(p);p.toi=(p.toiES||0)+(p.toiPP||0)+(p.toiSH||0)});
+  $("#ptable").innerHTML=th(cols,S.sortP,"P")+"<tbody>"+rows.slice(0,400).map(p=>`<tr class="${inSol.has(p.id)?"sel":""}">
+    <td class="l"><span class="ps2">${POSFI[p.pos]}</span></td><td class="l"><button class="btn small" style="border:0;padding:0;background:none;font-weight:600" data-detail="${p.id}">${esc(p.name)}</button></td>
+    <td class="l">${esc(p.club)}</td><td class="l">${esc(p.opp)}</td><td class="l">${esc(p.role)}</td><td class="num">${f1(p.price)}</td>
+    <td class="x" style="--w:${(p.x/mx*100).toFixed(0)}%">${f1(p.x)}</td><td class="num">${f2(p.ppx)}</td><td class="num">${f1(p.toi)}</td><td class="num">${f1(p.ms)}</td><td class="num">${f2(p.mp)}</td>
+    <td>${p.av<0.9?`<span class="pill warn">${pct(p.av)}</span>`:pct(p.av)}</td>
+    <td class="l"><button class="btn small" data-lock="${p.id}" aria-pressed="${S.locks.has(p.id)}">Lukitse</button> <button class="btn small" data-excl="${p.id}" aria-pressed="${S.excl.has(p.id)}">Pois</button></td></tr>`).join("")+"</tbody>";
+}
+function renderGoalies(){
+  if(!S.ds){$("#gtable").innerHTML="";return}
+  const inSol=new Set((S.sols[S.solIdx]||{ids:[]}).ids);
+  let rows=sortRows(S.P.filter(p=>p.pos==="G"&&p.av>0.02),S.sortG);const mx=Math.max(...rows.map(p=>p.x),1);
+  const cols=[["name","Maalivahti","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["price","Hinta"],["av","Aloittaa"],["xi","Jos aloittaa"],["x","xPTS"],["pw","Voitto"],["sa","Laukauksia"],["ga","Päästetyt"],["s35","35+ torj."],["so","Nollapeli"],["act","","l"]];
+  $("#gtable").innerHTML=th(cols,S.sortG,"G")+"<tbody>"+rows.map(p=>`<tr class="${inSol.has(p.id)?"sel":""}"><td class="l"><button class="btn small" style="border:0;padding:0;background:none;font-weight:600" data-detail="${p.id}">${esc(p.name)}</button></td><td class="l">${esc(p.club)}</td><td class="l">${esc(p.opp)}</td>
+    <td class="num">${f1(p.price)}</td><td>${p.av>=0.9?`<span class="pill good">${pct(p.av)}</span>`:p.av<0.5?`<span class="pill">${pct(p.av)}</span>`:`<span class="pill warn">${pct(p.av)}</span>`}</td>
+    <td class="num">${f1(p.xi)}</td><td class="x" style="--w:${(p.x/mx*100).toFixed(0)}%">${f1(p.x)}</td><td class="num">${pct(p.pw)}</td><td class="num">${f1(p.sa)}</td><td class="num">${f2(p.ga)}</td><td class="num">${pct(p.s35)}</td><td class="num">${pct(p.so)}</td>
+    <td class="l"><button class="btn small" data-lock="${p.id}" aria-pressed="${S.locks.has(p.id)}">Lukitse</button> <button class="btn small" data-excl="${p.id}" aria-pressed="${S.excl.has(p.id)}">Pois</button></td></tr>`).join("")+"</tbody>";
+}
+function renderGames(){
+  if(!S.ds||!S.games.length){$("#gamesGrid").innerHTML='<div class="panel empty">Otteluita ei ole ladattu. Lataa myös expected_games.csv.</div>';return}
+  $("#gamesGrid").innerHTML=S.games.map(g=>{const pm=gameProbs(g.lhm,g.lam),pk=g.market?gameProbs(g.lh,g.la):null;const u=pk||pm,lh=g.market?g.lh:g.lhm,la=g.market?g.la:g.lam;
+    return `<article class="game"><div class="vs"><span><b>${esc(g.home)}</b> <span class="muted">koti</span></span><span><span class="muted">vieras</span> <b>${esc(g.away)}</b></span></div>
+    <div class="vs"><span class="score">${f2(lh)}</span><span class="muted">${g.market?"markkina":"malli"}</span><span class="score">${f2(la)}</span></div>
+    <div class="split" aria-label="Voittotodennäköisyys"><i style="width:${(u.home*100).toFixed(1)}%;background:var(--accent)"></i><i style="width:${(u.away*100).toFixed(1)}%;background:var(--muted)"></i></div>
+    <dl class="kv"><dt>Voitto K / V</dt><dd>${pct(u.home)} / ${pct(u.away)}</dd><dt>Jatkoaika</dt><dd>${pct(u.ot)}</dd>
+    <dt>Yli 5.5 / 6.5</dt><dd>${pct(overP(lh,la,5.5))} / ${pct(overP(lh,la,6.5))}</dd>
+    <dt>Malli ilman kertoimia</dt><dd>${f2(g.lhm)}–${f2(g.lam)}, koti ${pct(pm.home)}</dd></dl></article>`}).join("");
+}
+function oddsCell(key,p){const o=S.odds[key];const e=o?p*o-1:null;
+  return `<td class="cell${o?" has":""}" data-odds="${esc(key)}" data-p="${p}" tabindex="0" title="Syötä kerroin"><span class="pc">${pct(p)}</span><span class="oc">${fair(p)}${o?` · ${o.toFixed(2)} <span class="edge ${e>0?"pos":"neg"}">${(e*100>0?"+":"")+(e*100).toFixed(0)}%</span>`:""}</span></td>`}
+function renderBets(){
+  if(!S.ds){$("#btGames").innerHTML="";$("#btPlayers").innerHTML="";$("#myOdds").innerHTML='<span class="muted">Ei dataa.</span>';return}
+  // ottelut
+  const gcols=[["m","Ottelu","l"],["g","Maalit (malli)"],["h","Koti"],["a","Vieras"],["o55","Yli 5.5"],["u55","Alle 5.5"],["o65","Yli 6.5"],["u65","Alle 6.5"],["mk","Markkina: koti"]];
+  $("#btGames").innerHTML="<thead><tr>"+gcols.map(([k,l,c])=>`<th class="${c||""}">${l}</th>`).join("")+"</tr></thead><tbody>"+S.games.map(g=>{const pm=gameProbs(g.lhm,g.lam),k=`${g.home}-${g.away}`;
+    const o55=overP(g.lhm,g.lam,5.5),o65=overP(g.lhm,g.lam,6.5);const mk=g.market?gameProbs(g.lh,g.la).home:null;
+    return `<tr><td class="l pn">${esc(g.home)}–${esc(g.away)}</td><td class="num">${f2(g.lhm)}–${f2(g.lam)}</td>${oddsCell(k+"|koti",pm.home)}${oddsCell(k+"|vieras",pm.away)}${oddsCell(k+"|yli5.5",o55)}${oddsCell(k+"|alle5.5",1-o55)}${oddsCell(k+"|yli6.5",o65)}${oddsCell(k+"|alle6.5",1-o65)}
+      <td class="num">${mk==null?"–":pct(mk)+` <span class="muted">(${((pm.home-mk)*100>0?"+":"")+Math.round((pm.home-mk)*100)})</span>`}</td></tr>`}).join("")+"</tbody>";
+  // pelaajat
+  const bt=$("#bTeam").value,q=$("#bSearch").value.toLowerCase(),mn=+$("#bMin").value||0;
+  let rows=S.P.filter(p=>p.pos!=="G"&&p.games===1&&p.mp>=mn&&(!bt||p.club===bt)&&(!q||p.name.toLowerCase().includes(q))&&p.av>0.05);
+  rows=sortRows(rows,S.sortB);
+  const cols=[["name","Pelaaja","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["mp","Pisteet"],["p_pts1","Piste"],["p_pts2","2+ pistettä"],["p_goal","Maali"],["p_sog3","3+ laukausta"],["p_sog4","4+ laukausta"]];
+  $("#btPlayers").innerHTML=th(cols,S.sortB,"B")+"<tbody>"+rows.slice(0,300).map(p=>`<tr><td class="l pn">${esc(p.name)}${p.av<0.9?' <span class="pill warn">epävarma</span>':""}</td><td class="l">${esc(p.club)}</td><td class="l">${esc(p.opp)}</td><td class="num">${f2(p.mp)}</td>
+    ${PROPS.map(([k])=>oddsCell(p.id+"|"+k,p["p_"+k])).join("")}</tr>`).join("")+"</tbody>";
+  // omat kertoimet
+  const list=Object.entries(S.odds).map(([key,o])=>{const [who,mk]=key.split("|");let label,pr;
+    if(/^\d+$/.test(who)){const p=S.byId[+who];if(!p)return null;const pd=PROPS.find(x=>x[0]===mk);label=p.name+" · "+(pd?pd[1]:mk);pr=p["p_"+mk]}
+    else{const g=S.games.find(g=>`${g.home}-${g.away}`===who);if(!g)return null;const pm=gameProbs(g.lhm,g.lam);
+      label=who.replace("-","–")+" · "+({koti:"Kotivoitto",vieras:"Vierasvoitto","yli5.5":"Yli 5.5 maalia","alle5.5":"Alle 5.5 maalia","yli6.5":"Yli 6.5 maalia","alle6.5":"Alle 6.5 maalia"}[mk]||mk);
+      pr=mk==="koti"?pm.home:mk==="vieras"?pm.away:mk.startsWith("yli")?overP(g.lhm,g.lam,+mk.slice(3)):1-overP(g.lhm,g.lam,+mk.slice(4))}
+    return {key,label,p:pr,o,e:pr*o-1}}).filter(Boolean).sort((a,b)=>b.e-a.e);
+  $("#myOdds").innerHTML=`<div class="row" style="justify-content:space-between"><h3>Omat kertoimet</h3>${list.length?'<button class="btn small" data-act="clearodds">Tyhjennä</button>':""}</div>`+
+    (list.length?`<div class="tw"><table><thead><tr><th class="l">Kohde</th><th>Mallin tod.</th><th>Reilu</th><th>Kerroin</th><th>Arvo</th><th></th></tr></thead><tbody>${list.map(x=>`<tr><td class="l">${esc(x.label)}</td><td class="num">${pct(x.p)}</td><td class="num">${fair(x.p)}</td><td class="num">${x.o.toFixed(2)}</td><td class="edge ${x.e>0?"pos":"neg"}">${(x.e>0?"+":"")+(x.e*100).toFixed(1)} %</td><td><button class="btn small" data-delodds="${esc(x.key)}">Poista</button></td></tr>`).join("")}</tbody></table></div>
+    <p class="muted" style="margin:0">Jätä varmuusmarginaali: malli on kalibroitu muutaman prosentin tarkkuudelle, joten pieni positiivinen arvo ei vielä tarkoita etua.</p>`:'<span class="muted">Klikkaa taulukon solua ja syötä vedonvälittäjän kerroin. Kertoimet tallentuvat vain tähän selaimeen.</span>');
+}
+function renderAll(){renderLineup();renderPlayers();renderGoalies();renderGames();renderBets()}
+
+// ---------- pelaajan erittely ----------
+function openDetail(id){const p=S.byId[id];if(!p)return;const G=p.pos==="G";
+  const parts=G?[["Voitto",p.c1],["Jatkoaikatappio",p.c2],["Päästetyt maalit",p.c3],["Torjunnat",p.c4],["Bonukset",p.c5]]:[["Maalit",p.c1],["Syötöt",p.c2],["Laukaukset",p.c3],["Blokit",p.c4],["Bonukset ym.",p.c5]];
+  const mx=Math.max(...parts.map(x=>Math.abs(x[1]||0)),1);
+  $("#drawer").innerHTML=`<div class="row" style="justify-content:space-between"><h2>${esc(p.name)}</h2><button class="btn small" data-act="close">Sulje</button></div>
+  <p class="muted" style="margin:0">${POSFI[p.pos]} · ${esc(p.club)} · ${esc(p.opp)} · hinta ${f1(p.price)}</p>
+  <div class="sum" style="margin-top:12px"><div class="stat"><div class="k">xPTS</div><div class="v">${f1(p.x)}</div></div><div class="stat"><div class="k">${G?"Jos aloittaa":"Jos pelaa"}</div><div class="v">${f1(p.xi)}</div></div>
+  <div class="stat"><div class="k">${G?"Aloittaa":"Pelaa"}</div><div class="v">${pct(p.av)}</div></div><div class="stat"><div class="k">xPTS/hinta</div><div class="v">${f2(p.ppx)}</div></div></div>
+  <h3 style="margin-top:16px">Pisteiden erittely ${G?"(jos aloittaa)":"(jos pelaa)"}</h3>
+  <div class="bars" style="margin-top:8px">${parts.map(([l,v])=>`<div class="b"><span>${l}</span><i class="${v<0?"neg":""}" style="width:${(Math.abs(v||0)/mx*100).toFixed(0)}%"></i><span class="num" style="text-align:right">${f1(v)}</span></div>`).join("")}</div>
+  <h3 style="margin-top:16px">Ottelun odotukset</h3>
+  <dl class="kv" style="margin-top:6px">${G?`<dt>Voitto</dt><dd>${pct(p.pw)}</dd><dt>Laukauksia vastaan</dt><dd>${f1(p.sa)}</dd><dt>Torjuntoja</dt><dd>${f1(p.sv)}</dd><dt>Päästettyjä</dt><dd>${f2(p.ga)}</dd><dt>35+ torjuntaa</dt><dd>${pct(p.s35)}</dd><dt>Nollapeli</dt><dd>${pct(p.so)}</dd>`
+   :`<dt>Rooli</dt><dd>${esc(roleText(p))||"–"}</dd><dt>Jääaika</dt><dd>${f1((p.toiES||0)+(p.toiPP||0)+(p.toiSH||0))} (tasak. ${f1(p.toiES)} + yv ${f1(p.toiPP)}${p.toiSH!=null?" + av "+f1(p.toiSH):""})</dd><dt>Maaleja</dt><dd>${f2(p.mg)}</dd><dt>Syöttöjä</dt><dd>${f2(p.ma)}</dd><dt>Laukauksia</dt><dd>${f2(p.ms)}</dd><dt>Blokkeja</dt><dd>${f2(p.mb)}</dd>
+     <dt>5+ laukausta / 3+ blokkia / 3+ pistettä</dt><dd>${pct(p.ps5)} / ${pct(p.pb3)} / ${pct(p.pp3)}</dd><dt>Ketjukerroin (syötöt) tasak. / yv</dt><dd>${f2(p.mateES)} / ${f2(p.matePP)}</dd>`}</dl>
+  <div class="row" style="margin-top:16px"><button class="btn${S.locks.has(p.id)?" primary":""}" data-lock="${p.id}" aria-pressed="${S.locks.has(p.id)}">${S.locks.has(p.id)?"Lukittu kokoonpanoon":"Lukitse kokoonpanoon"}</button><button class="btn" data-excl="${p.id}" aria-pressed="${S.excl.has(p.id)}">${S.excl.has(p.id)?"Poistettu":"Poista valinnoista"}</button></div>`;
+  $("#drawer").hidden=false;$("#scrim").hidden=false}
+function closeDetail(){$("#drawer").hidden=true;$("#scrim").hidden=true}
+
+// ---------- tapahtumat ----------
+function setTab(t){$$("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));$$("main > section").forEach(s=>s.hidden=s.id!=="tab-"+t);store("tab",t);if(location.hash!=="#"+t)history.replaceState(null,"","#"+t)}
+$$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+window.addEventListener("hashchange",()=>{const t=location.hash.slice(1);if($("#tab-"+t))setTab(t)});
+let solveT;function resolve(){clearTimeout(solveT);solveT=setTimeout(()=>{solve();renderAll()},120)}
+["#budget","#maxTeam","#nAlt"].forEach(s=>$(s).addEventListener("change",resolve));$("#budget").addEventListener("input",resolve);
+["#fPos","#fTeam","#fPrice","#fSearch","#fAvail"].forEach(s=>$(s).addEventListener("input",renderPlayers));
+["#bTeam","#bSearch","#bMin"].forEach(s=>$(s).addEventListener("input",renderBets));
+document.addEventListener("click",e=>{const t=e.target.closest("[data-sort],[data-lock],[data-excl],[data-unlock],[data-unexcl],[data-act],[data-sol],[data-pid],[data-detail],[data-go],[data-odds],[data-delodds]");if(!t)return;
+  if(t.dataset.sort){const map={P:"sortP",B:"sortB",G:"sortG"}[t.dataset.t];const s=S[map];if(s.k===t.dataset.sort)s.d*=-1;else{s.k=t.dataset.sort;s.d=["name","club","opp","role","pos"].includes(s.k)?1:-1}
+    ({P:renderPlayers,B:renderBets,G:renderGoalies})[t.dataset.t]();return}
+  if(t.dataset.lock){const id=+t.dataset.lock;S.excl.delete(id);S.locks.has(id)?S.locks.delete(id):S.locks.add(id);saveSel();resolve();if(!$("#drawer").hidden)openDetail(id);toast(S.locks.has(id)?"Lukittu kokoonpanoon":"Lukitus poistettu");return}
+  if(t.dataset.excl){const id=+t.dataset.excl;S.locks.delete(id);S.excl.has(id)?S.excl.delete(id):S.excl.add(id);saveSel();resolve();if(!$("#drawer").hidden)openDetail(id);toast(S.excl.has(id)?"Poistettu valinnoista":"Palautettu valintoihin");return}
+  if(t.dataset.unlock){S.locks.delete(+t.dataset.unlock);saveSel();resolve();return}
+  if(t.dataset.unexcl){S.excl.delete(+t.dataset.unexcl);saveSel();resolve();return}
+  if(t.dataset.sol){S.solIdx=+t.dataset.sol;renderLineup();renderPlayers();renderGoalies();return}
+  if(t.dataset.pid){openDetail(+t.dataset.pid);return}
+  if(t.dataset.detail){openDetail(+t.dataset.detail);return}
+  if(t.dataset.go){setTab(t.dataset.go);return}
+  if(t.dataset.delodds){delete S.odds[t.dataset.delodds];store("odds:"+S.ds.date,S.odds);renderBets();return}
+  if(t.dataset.odds){editOdds(t);return}
+  const a=t.dataset.act;
+  if(a==="close")closeDetail();
+  if(a==="clearsel"){S.locks.clear();S.excl.clear();saveSel();resolve()}
+  if(a==="clearodds"){S.odds={};store("odds:"+S.ds.date,S.odds);renderBets()}
+});
+$("#scrim").addEventListener("click",closeDetail);
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDetail();if(e.key==="Enter"&&e.target.matches("td[data-odds]"))editOdds(e.target)});
+function editOdds(td){if(td.querySelector("input"))return;const key=td.dataset.odds,cur=S.odds[key];
+  td.innerHTML=`<input class="oddsin num" type="number" step="0.01" min="1.01" inputmode="decimal" value="${cur||""}" aria-label="Kerroin">`;const inp=td.querySelector("input");inp.focus();
+  const done=save=>{if(save){const v=parseFloat(String(inp.value).replace(",","."));if(v>1)S.odds[key]=v;else delete S.odds[key];store("odds:"+S.ds.date,S.odds)}renderBets()};
+  inp.addEventListener("keydown",e=>{if(e.key==="Enter")done(true);if(e.key==="Escape")done(false)});inp.addEventListener("blur",()=>done(true))}
+
+// ---------- tiedostojen lataus ----------
+$("#csvFiles").addEventListener("change",async e=>{const files=[...e.target.files];const msg=$("#dataMsg");if(!files.length)return;
+  try{let pg=null,gm=null;
+    for(const f of files){const rows=parseCSV(await f.text());if(!rows.length)continue;const h=Object.keys(rows[0]);
+      if(h.includes("e_pts")&&h.includes("PlayerID")&&h.includes("date"))pg=rows;else if(h.includes("lam_home"))gm=rows;}
+    if(!pg){msg.textContent="Tiedostoa expected_points_per_game.csv ei löytynyt valinnasta. Valitse se kansiosta output_daily.";return}
+    const ds=buildDataset(pg,gm);useDataset(ds);
+    msg.textContent=`Ladattu: ${ds.players.length} pelaajaa${gm?`, ${ds.games.length} ottelua`:" (otteluita ei valittu, Ottelut-välilehti jää tyhjäksi)"}.`;
+    if(S.db&&S.isOwner){try{await S.db.doc("datasets/latest").set(ds);msg.textContent+=" Tallennettu: näkyy myös muilla laitteillasi."}catch(err){msg.textContent+=" Tallennus ei onnistunut ("+(err&&err.code||"virhe")+"); data on käytössä vain tällä kertaa."}}
+    else{msg.textContent+=" Data on käytössä tässä selaimessa.";try{localStorage.setItem("pk:ds",JSON.stringify(ds))}catch(err){}}
+    toast("Illan data ladattu");setTab("lineup");
+  }catch(err){msg.textContent="Tiedostoa ei voitu lukea: "+(err&&err.message||err)}});
+
+// ---------- käynnistys ----------
+const ui=load("ui",null);if(ui){$("#budget").value=ui.budget;$("#maxTeam").value=String(ui.cap);$("#nAlt").value=String(ui.K)}
+const t0=location.hash.slice(1)||load("tab","lineup");if($("#tab-"+t0))setTab(t0);
+$("#noData").hidden=false;renderAll();
+const cached=load("ds",null);if(cached&&cached.players)useDataset(cached);
+window.pistekone={useDataset,buildDataset,optimize,parseCSV};
+// GitHub Pages: illan data tiedostosta data/latest.json (publish.py päivittää sen)
+document.querySelectorAll(".own").forEach(e=>e.hidden=true);document.querySelectorAll(".vw").forEach(e=>e.hidden=false);
+async function fetchLatest(){try{const r=await fetch("data/latest.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;
+  const ds=await r.json();if(ds&&ds.players&&(!S.ds||ds.updated!==S.ds.updated))useDataset(ds)}catch(e){}}
+fetchLatest();setInterval(fetchLatest,5*60*1000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)fetchLatest()});
+})();
+</script>
+</body>
+</html>
