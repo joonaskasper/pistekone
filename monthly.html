@@ -1,0 +1,1186 @@
+<!doctype html>
+<html lang="fi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>NHL Kuukausikone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Saira:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Kuukausikone: sama ulkoasu kuin Pistekoneessa; kaukalo, suunnitelmataulukko ja otteluohjelman lämpökartta. */
+:root{
+  --bg:#E4EAEF; --surface:#FFFFFF; --sunk:#EDF2F5; --ink:#14202B; --muted:#596876; --line:#D0DAE2;
+  --ice:#F4F8FA; --ice-edge:#BBCAD4; --crease:#CFE3F3; --blue:#2152A3; --red:#C23B3B;
+  --accent:#2152A3; --accent-ink:#FFFFFF; --accent-soft:#DCE6F5; --bar:#D6E2F2;
+  --tok:#FFFFFF; --tok-ink:#14202B; --tok-mut:#596876;
+  --good:#1D7A4C; --warn:#A86A12; --bad:#B23B3B; --good-soft:#DCF0E4; --warn-soft:#F6EAD3; --bad-soft:#F7E0DE;
+  --f-display:"Saira Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Saira",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:8px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1A25; --surface:#142434; --sunk:#1A2D3F; --ink:#E5ECF2; --muted:#93A4B3; --line:#25394B;
+  --ice:#D3DFE6; --ice-edge:#8FA6B6; --crease:#A9C8E2; --blue:#2A5FB8; --red:#B8363A;
+  --accent:#7FA8FF; --accent-ink:#0E1A25; --accent-soft:#1F3656; --bar:#22406A;
+  --tok:#F7FAFC; --tok-ink:#14202B; --tok-mut:#55636F;
+  --good:#5FD39A; --warn:#E3A84A; --bad:#FF8A80; --good-soft:#163527; --warn-soft:#382B15; --bad-soft:#3A1E1C; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0E1A25; --surface:#142434; --sunk:#1A2D3F; --ink:#E5ECF2; --muted:#93A4B3; --line:#25394B;
+  --ice:#D3DFE6; --ice-edge:#8FA6B6; --crease:#A9C8E2; --blue:#2A5FB8; --red:#B8363A;
+  --accent:#7FA8FF; --accent-ink:#0E1A25; --accent-soft:#1F3656; --bar:#22406A;
+  --tok:#F7FAFC; --tok-ink:#14202B; --tok-mut:#55636F;
+  --good:#5FD39A; --warn:#E3A84A; --bad:#FF8A80; --good-soft:#163527; --warn-soft:#382B15; --bad-soft:#3A1E1C; color-scheme:dark }
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.strip-in{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
+.brand{font-family:var(--f-display);font-weight:700;font-size:27px;line-height:1}
+.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);margin-top:3px}
+.night{display:flex;align-items:baseline;gap:8px;padding:6px 11px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink)}
+.night b{font-family:var(--f-display);font-size:22px;line-height:1}
+.night span{font-size:12px;opacity:.9}
+nav.tabs{display:flex;gap:2px;margin-left:auto;overflow-x:auto;max-width:100%}
+nav.tabs button{font:600 14px var(--f-body);background:none;border:0;color:var(--muted);padding:8px 12px;border-radius:var(--r);cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);background:var(--sunk)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{padding-block:18px 56px}
+h2{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0;line-height:1.1;text-wrap:balance}
+h3{font-family:var(--f-display);font-weight:600;font-size:18px;margin:0;line-height:1.2}
+.lede{color:var(--muted);max-width:70ch;margin:4px 0 0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.ctrls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
+.ctrl{display:flex;flex-direction:column;gap:3px}
+.ctrl label{font-size:12px;font-weight:500;color:var(--muted)}
+input,select{font:14px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:7px 9px}
+input[type=number]{width:90px;font-family:var(--f-mono)}
+.btn{font:600 13px var(--f-body);border-radius:var(--r);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;cursor:pointer}
+.btn:hover{background:var(--sunk)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.small{padding:4px 9px;font-size:12px}
+.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
+.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--accent-soft);color:var(--accent)}
+.notice{border:1px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:12px 14px}
+.empty{padding:28px 18px;text-align:center;color:var(--muted)}
+
+/* rink */
+.rink{position:relative;background:var(--ice);border:3px solid var(--ice-edge);border-top-width:0;border-radius:0 0 110px 110px / 0 0 80px 80px;
+  display:grid;grid-template-rows:repeat(var(--rows,4),auto);row-gap:14px;padding:22px 10px 92px;min-height:480px;align-content:space-between}
+.rink svg{position:absolute;inset:0;width:100%;height:100%}
+.rrow{position:relative;display:flex;justify-content:center;gap:clamp(6px,1.6vw,12px)}
+.tok{width:clamp(96px,30%,162px);background:var(--tok);color:var(--tok-ink);border:1px solid var(--ice-edge);border-radius:7px;padding:7px 9px 8px;
+  box-shadow:0 2px 0 rgba(20,32,43,.13);position:relative;text-align:left;cursor:pointer;font:inherit}
+.tok .top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tok-mut)}
+.tok .ps{font:600 12px/1 var(--f-display);color:#fff;background:var(--blue);border-radius:4px;padding:3px 5px 2px}
+.tok.g .ps{background:var(--red)}
+.tok .nm{display:block;margin-top:4px;font:700 clamp(16px,2vw,19px)/1.05 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tok .op{display:block;font-size:12px;color:var(--tok-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tok .bt{display:flex;justify-content:space-between;align-items:baseline;margin-top:3px}
+.tok .xp{font:700 clamp(19px,2.4vw,24px)/1 var(--f-display);font-variant-numeric:tabular-nums}
+.tok .pr{font:500 12px/1 var(--f-mono);color:var(--tok-mut)}
+.tok .flag{position:absolute;top:-9px;left:8px;background:var(--warn);color:#14202B;font:600 11px/1 var(--f-body);padding:3px 6px;border-radius:4px}
+.tok .lock{position:absolute;top:-9px;right:8px;background:var(--blue);color:#fff;font:600 11px/1 var(--f-body);padding:3px 6px;border-radius:4px}
+.tok.new{border:2px solid var(--blue)}
+@media (max-width:480px){.rink{padding:14px 5px 80px;border-radius:0 0 64px 64px / 0 0 56px 56px;min-height:0}.tok{padding:6px 6px 7px}.tok .pr{display:none}}
+
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:520px){.sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{background:var(--sunk);border-radius:var(--r);padding:8px 10px}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font:700 26px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.alt{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;background:var(--surface);cursor:pointer;text-align:left;font:inherit;color:inherit}
+.alt[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.alt .mv{font-size:13px}.alt .out{color:var(--bad);text-decoration:line-through}.alt .in{color:var(--good);font-weight:600}
+.alt .gain{font:700 24px/1 var(--f-display);text-align:right}
+.alt .gain small{display:block;font:500 12px var(--f-body);color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.meter{height:9px;border-radius:5px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+
+/* tables */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:12px;font-weight:500;color:var(--muted);background:var(--sunk);position:sticky;top:0;cursor:pointer;user-select:none;z-index:1}
+th.l,td.l{text-align:left}
+tbody tr:hover{background:var(--sunk)}
+tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+td.x{font:700 15px/1 var(--f-display);font-variant-numeric:tabular-nums;background:linear-gradient(90deg,var(--bar) var(--w,0%),transparent var(--w,0%))}
+.ps2{display:inline-block;min-width:30px;text-align:center;font:600 12px/1 var(--f-display);padding:4px 5px 3px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
+.pn{font-weight:600}
+.pc{display:block;font:600 14px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.oc{display:block;font:400 11px var(--f-mono);color:var(--muted)}
+td.cell{cursor:pointer}
+td.cell.has{background:var(--accent-soft)}
+.edge{font:600 12px var(--f-mono)}.edge.pos{color:var(--good)}.edge.neg{color:var(--bad)}
+.gcard{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.game{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.score{font:700 30px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.vs{display:flex;justify-content:space-between;align-items:baseline}
+.split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
+.split i{display:block;height:100%}
+.kv{display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;font-family:var(--f-mono);text-align:right}
+
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(420px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:20;overflow-y:auto;
+  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 16px;box-shadow:-8px 0 30px rgba(0,0,0,.18)}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:19}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bars .b{display:grid;grid-template-columns:110px minmax(0,1fr) 52px;gap:8px;align-items:center;font-size:13px}
+.bars .b i{display:block;height:10px;border-radius:3px;background:var(--accent)}
+.bars .b i.neg{background:var(--bad)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:var(--r);z-index:30}
+.oddsin{width:76px}
+@media (prefers-reduced-motion:no-preference){.tok{transition:transform .12s ease}.tok:hover{transform:translateY(-2px)}}
+
+.busy{position:fixed;inset:auto 0 0 0;display:flex;justify-content:center;pointer-events:none;z-index:25;padding-bottom:calc(18px + env(safe-area-inset-bottom,0px))}
+.busy span{background:var(--accent);color:var(--accent-ink);font-weight:600;padding:9px 16px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.tok.idle{opacity:.55}
+.tok .flag.off{background:var(--line);color:var(--tok-ink)}
+.out{color:var(--bad);text-decoration:line-through}.in{color:var(--good);font-weight:600}
+.moves{display:flex;flex-direction:column;gap:6px}
+.moves .mv{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:baseline;padding:8px 10px;border-radius:var(--r);background:var(--sunk)}
+.moves .arr{color:var(--muted);font-weight:700}
+.trow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}
+.lnk{font:600 14px var(--f-body);color:var(--ink);background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.lnk:hover{text-decoration:underline}
+.pick{display:flex;gap:6px;align-items:center;font:14px var(--f-body);color:var(--ink);background:var(--sunk);border:1px solid var(--line);border-radius:var(--r);padding:6px 9px;cursor:pointer;text-align:left}
+.pick:hover{border-color:var(--accent)}
+.pill .x{border:0;background:none;color:inherit;font:700 13px var(--f-body);cursor:pointer;padding:0 0 0 2px}
+#planTable tbody tr{cursor:pointer}
+td.sg{min-width:46px;text-align:center;font:500 12px var(--f-mono);color:var(--muted);padding:6px 4px}
+td.sg.on{color:var(--ink);background:color-mix(in srgb,var(--accent) calc(var(--l,0.2)*100%),transparent)}
+td.sg.b2b{box-shadow:inset 0 -3px 0 var(--warn)}
+#schedTable th{font-size:11px;line-height:1.15;padding:5px 4px;text-align:center}
+#schedTable th.l{text-align:left}
+main > .notice{margin-bottom:14px}
+</style>
+</head>
+<body>
+<header class="strip">
+  <div class="wrap strip-in">
+    <div class="brand">Kuukausikone<small>NHL Monthly · daily-vaihdot</small></div>
+    <div class="night" id="night"><b>–</b><span>ei dataa</span></div>
+    <nav class="tabs" role="tablist" aria-label="Näkymät">
+      <button role="tab" data-tab="plan" aria-selected="true">Suunnitelma</button>
+      <button role="tab" data-tab="team" aria-selected="false">Oma joukkue</button>
+      <button role="tab" data-tab="players" aria-selected="false">Pelaajat</button>
+      <button role="tab" data-tab="sched" aria-selected="false">Otteluohjelma</button>
+      <button role="tab" data-tab="data" aria-selected="false">Data ja malli</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="noData" class="notice stack" hidden>
+    <b>Jakson dataa ei ole vielä ladattu.</b>
+    <span>Aja koneellasi <span class="mono">run_monthly.bat</span>. Sivu päivittyy itsestään, kun uudet luvut tulevat.</span>
+  </div>
+  <div id="staleNote" class="notice" hidden></div>
+
+  <!-- SUUNNITELMA -->
+  <section id="tab-plan" class="stack">
+    <div id="setupNote" class="notice stack" hidden></div>
+    <div class="grid2">
+      <div class="stack">
+        <div class="row" style="justify-content:space-between;align-items:baseline">
+          <h2 id="roundTitle">Kierros</h2><span class="muted" id="roundDeadline"></span>
+        </div>
+        <div class="rink" id="rink"></div>
+        <p class="muted" style="margin:0" id="rinkNote"></p>
+      </div>
+      <div class="stack">
+        <div class="sum" id="sumStats"></div>
+        <div class="panel stack" id="actionPanel"></div>
+        <div class="panel stack">
+          <div class="row" style="justify-content:space-between"><h3>Vaihtoehdot tälle kierrokselle</h3><span class="muted" id="altInfo"></span></div>
+          <div class="stack" id="alts"><span class="muted">Lasketaan suunnitelman jälkeen…</span></div>
+        </div>
+        <div class="panel ctrls">
+          <div class="ctrl"><label for="wcMode">Villi kortti suunnitelmassa</label><select id="wcMode"></select></div>
+          <div class="ctrl"><label for="acc">Haku</label><select id="acc"><option value="fast">Nopea</option><option value="full">Tarkka (hitaampi)</option></select></div>
+          <button class="btn" data-act="replan">Laske uudelleen</button>
+        </div>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="row" style="justify-content:space-between;align-items:baseline"><h2>Koko jakson suunnitelma</h2><span class="muted" id="planInfo"></span></div>
+      <p class="lede">Joka kierros saa yhden ilmaisen vaihdon, käyttämättömät säästyvät. Suunnitelma käyttää vaihdot silloin, kun niistä saa eniten, esimerkiksi kaksi vaihtoa ennen päivää, jona monella joukkueella on peli. Klikkaa riviä nähdäksesi sen päivän joukkueen kaukalossa.</p>
+      <div class="tw"><table id="planTable"></table></div>
+    </div>
+  </section>
+
+  <!-- OMA JOUKKUE -->
+  <section id="tab-team" class="stack" hidden>
+    <div><h2>Oma joukkue ja vaihtotilanne</h2><p class="lede">Suunnitelma lasketaan tästä tilanteesta. Tarkista luvut pelistä ennen kierroksen takarajaa. Kun kierros vaihtuu, sivu lisää säästettyihin vaihtoihin yhden itsestään.</p></div>
+    <div class="grid2">
+      <div class="panel stack">
+        <div class="row" style="justify-content:space-between"><h3>Pelaajat</h3><span class="muted" id="teamCount"></span></div>
+        <div class="stack" id="teamList"></div>
+        <p class="muted" style="margin:0" id="teamCheck"></p>
+        <div class="row">
+          <button class="btn" data-act="useInitial">Ota suunnitelman joukkue</button>
+          <button class="btn" data-act="clearTeam">Tyhjennä</button>
+        </div>
+        <div class="ctrl" style="position:relative"><label for="addSearch">Lisää pelaaja</label>
+          <input id="addSearch" type="search" placeholder="Nimi tai joukkue" autocomplete="off">
+          <div id="addList" class="stack" style="gap:4px;margin-top:6px"></div></div>
+      </div>
+      <div class="panel stack">
+        <h3>Vaihdot</h3>
+        <div class="ctrls">
+          <div class="ctrl"><label for="bank">Ilmaisia vaihtoja tällä kierroksella</label><input id="bank" type="number" min="0" max="32" step="1"></div>
+          <div class="ctrl"><label for="left">Vaihtoja jäljellä (enint. 32)</label><input id="left" type="number" min="0" max="32" step="1"></div>
+          <div class="ctrl"><label for="wcUsed">Villi kortti</label><select id="wcUsed"><option value="0">Käyttämättä</option><option value="1">Käytetty</option></select></div>
+        </div>
+        <p class="muted" style="margin:0">Ennen ensimmäistä kierrosta joukkueen voi koota vapaasti. Siitä eteenpäin vaihdon saa tehdä vain, jos ilmaisia vaihtoja on jäljellä.</p>
+        <div class="row"><button class="btn primary" data-act="didTransfers">Tein tämän kierroksen suositellut vaihdot</button></div>
+        <h3 style="margin-top:6px">Tarkka optimointi koneellasi</h3>
+        <p class="muted" style="margin:0"><span class="mono">run_monthly.bat</span> laskee myös tarkan suunnitelman, kun se tietää joukkueesi. Jos olet seurannut suunnitelmaa, se päättelee tilanteen itse. Jos joukkueesi poikkeaa, tallenna tilanne tästä ja aja malli: tiedosto tallentuu Lataukset-kansioon, josta malli löytää sen.</p>
+        <div class="row"><button class="btn" data-act="saveState">Tallenna tilanne koneelle</button></div>
+        <h3 style="margin-top:6px">Lukitut ja poistetut</h3>
+        <div class="chips" id="lockChips"><span class="muted">Ei yhtään. Lukitse tai poista pelaajia Pelaajat-välilehdellä.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PELAAJAT -->
+  <section id="tab-players" class="stack" hidden>
+    <div><h2>Pelaajat</h2><p class="lede">Odotetut pisteet jakson jäljellä olevista otteluista. B2B = peräkkäisinä päivinä pelattavat ottelut: yhdellä vaihdolla saa kaksi peliä. Maalivahdeilla B2B tarkoittaa yleensä, että toisen pelin aloittaa varamaalivahti, ja se on laskettu mukaan.</p></div>
+    <div class="panel ctrls">
+      <div class="ctrl"><label for="fPos">Pelipaikka</label><select id="fPos"><option value="">Kaikki</option><option value="G">Maalivahdit</option><option value="D">Puolustajat</option><option value="C">Keskushyökkääjät</option><option value="W">Laitahyökkääjät</option></select></div>
+      <div class="ctrl"><label for="fTeam">Joukkue</label><select id="fTeam"><option value="">Kaikki</option></select></div>
+      <div class="ctrl"><label for="fPrice">Hinta enintään</label><input id="fPrice" type="number" step="0.5" min="0" value="16"></div>
+      <div class="ctrl"><label for="fWin">Jakso</label><select id="fWin"><option value="all">Koko jäljellä oleva jakso</option><option value="7">Seuraavat 7 kierrosta</option><option value="3">Seuraavat 3 kierrosta</option></select></div>
+      <div class="ctrl"><label for="fSearch">Haku</label><input id="fSearch" type="search" placeholder="Nimi"></div>
+    </div>
+    <div class="tw"><table id="playersTable"></table></div>
+  </section>
+
+  <!-- OTTELUOHJELMA -->
+  <section id="tab-sched" class="stack" hidden>
+    <div><h2>Otteluohjelma</h2><p class="lede">Joukkueiden ottelut jäljellä olevilla kierroksilla. Korostetut solut ovat peräkkäisten päivien otteluita (B2B). Vahvempi väri = joukkueen odotetut maalit ottelussa ovat korkeammat.</p></div>
+    <div class="tw"><table id="schedTable"></table></div>
+  </section>
+
+  <!-- DATA -->
+  <section id="tab-data" class="stack" hidden>
+    <div><h2>Data ja malli</h2><p class="lede" id="dataStamp">Ei dataa.</p></div>
+    <div class="grid2">
+      <div class="panel stack">
+        <h3>Säännöt</h3>
+        <ul id="rulesList" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"></ul>
+      </div>
+      <div class="panel stack">
+        <h3>Miten suunnitelma syntyy</h3>
+        <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px">
+          <li><b>Pisteodottamat:</b> sama malli kuin Pistekoneessa, ajettuna jokaiselle jakson ottelulle: pelaajan tahdit kolmelta kaudelta, rooli ja jääaika, vastustaja, kotietu ja maalivahdit. Back-to-back-otteluissa ykkösmaalivahdin aloitustodennäköisyys laskee (NHL:n datasta: 59 % ensimmäisessä ja 34 % toisessa ottelussa, tavallisesti 69 %).</li>
+          <li><b>Aloitusjoukkue:</b> tarkka haku parhaista kokoonpanoista koko jakson painotetuilla pisteillä.</li>
+          <li><b>Vaihdot:</b> haku käy läpi kierros kerrallaan satoja vaihtoehtoisia suunnitelmia: vaihto vai säästö, yksi vai useampi vaihto, kuka pois ja kuka tilalle. Se säilyttää parhaat ja valitsee lopuksi suunnitelman, jonka koko jakson odotetut pisteet ovat suurimmat.</li>
+          <li><b>Tarkka optimointi:</b> <span class="mono">run_monthly.bat</span> ratkaisee lisäksi koko jakson kerralla kokonaislukuoptimoinnilla (noin 2 minuuttia). Testissä selaimen haku jäi noin 1 % tarkasta ratkaisusta (koko jakso: 2321 vs 2341 xPTS). Sivu käyttää tarkkaa suunnitelmaa aina, kun se alkaa samasta tilanteesta kuin oma joukkueesi, ja selaimen hakua muulloin (esim. kun muutat joukkuetta, lukitset pelaajia tai suunnittelet villiä korttia).</li>
+          <li><b>Päivitys:</b> ennusteet muuttuvat kokoonpanojen, loukkaantumisten ja maalivahtitiedon mukana. Aja malli uudelleen ennen kierroksen takarajaa, niin suunnitelma lasketaan tuoreilla luvuilla.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="scrim" class="scrim" hidden></div>
+<aside id="drawer" class="drawer" hidden aria-label="Pelaajan tiedot"></aside>
+<div id="toast" class="toast" hidden role="status"></div>
+<div id="busy" class="busy" hidden><span>Lasketaan suunnitelmaa…</span></div>
+<script>
+// Monthly-vaihtosuunnittelija: aloitusjoukkue + päiväkohtaiset vaihdot (säästettävät vaihdot, villi kortti).
+// Toimii selaimessa ja Nodessa (module.exports).
+(function (root) {
+  "use strict";
+  const UNIT = 10;
+
+  function prepare(ds, opt) {
+    opt = opt || {};
+    const R = ds.rules, D = ds.days.length;
+    const F = ds.pfields, gi = Object.fromEntries(ds.gfields.map((k, i) => [k, i]));
+    const excl = new Set(opt.exclude || []);
+    const P = [];
+    for (const row of ds.players) {
+      const o = {};
+      F.forEach((k, i) => (o[k] = row[i]));
+      const x = new Float64Array(D);
+      for (const g of o.g) x[g[gi.d]] += g[gi.x] || 0;
+      const id = o.id;
+      if (excl.has(id)) x.fill(0);
+      P.push({ id, pos: o.pos, club: o.club, price: Math.round(o.price * UNIT), x, fn: o.fn, ln: o.ln });
+    }
+    const byId = new Map(P.map((p, i) => [p.id, i]));
+    // satunnaiset tunnisteet joukkueen tiivisteeseen (sama joukkue = sama avain järjestyksestä riippumatta)
+    let seed = 12345;
+    const rnd32 = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed; };
+    const HA = new Uint32Array(P.length).map(() => rnd32() >>> 8), HB = new Uint32Array(P.length).map(() => rnd32());
+    return { R, D, P, byId, HA, HB, B: Math.floor(R.budget * UNIT + 1e-6), cap: R.max_per_team || 99 };
+  }
+
+  // ---------- tarkka yhden kierroksen optimointi annetuilla arvoilla (kuten Pistekone) ----------
+  function bestSquads(M, val, K, must) {
+    const R = M.R.slots, B = M.B, cap = M.cap;
+    must = must || new Set();
+    const ok = i => val[i] > 0 || must.has(i);
+    const idx = M.P.map((_, i) => i).filter(ok);
+    const G = idx.filter(i => M.P[i].pos === "G").sort((a, b) => val[b] - val[a]).slice(0, 25);
+    const Dd = idx.filter(i => M.P[i].pos === "D").sort((a, b) => val[b] - val[a]).slice(0, 45);
+    const Fs = idx.filter(i => M.P[i].pos === "C" || M.P[i].pos === "W").sort((a, b) => val[b] - val[a]).slice(0, 90);
+    for (const m of must) {                                   // varmista lukitut mukaan
+      const p = M.P[m];
+      const L = p.pos === "G" ? G : p.pos === "D" ? Dd : Fs;
+      if (!L.includes(m)) L.push(m);
+    }
+    Fs.sort((a, b) => val[b] - val[a]);
+    const nC = R.C[1], nW = R.W[1], n = Fs.length, SZ = (B + 1) * (nC + 1) * (nW + 1);
+    const ix = (b, c, w) => (b * (nC + 1) + c) * (nW + 1) + w;
+    const NEG = -1e9;
+    const V = new Array(n + 1);
+    V[n] = new Float32Array(SZ).fill(NEG);
+    for (let b = 0; b <= B; b++) for (let c = 0; c <= nC; c++) for (let w = 0; w <= nW; w++)
+      if (c + w === R.F && c >= R.C[0] && w >= R.W[0]) V[n][ix(b, c, w)] = 0;
+    for (let k = n - 1; k >= 0; k--) {
+      const p = M.P[Fs[k]], nx = V[k + 1], cur = new Float32Array(SZ), pc = p.price, isC = p.pos === "C", mu = must.has(Fs[k]), v0 = val[Fs[k]];
+      for (let b = 0; b <= B; b++) for (let c = 0; c <= nC; c++) for (let w = 0; w <= nW; w++) {
+        const i = ix(b, c, w); let take = NEG;
+        if (pc <= b) { const c2 = isC ? c + 1 : c, w2 = isC ? w : w + 1; if (c2 <= nC && w2 <= nW) { const v = nx[ix(b - pc, c2, w2)]; if (v > NEG / 2) take = v + v0; } }
+        cur[i] = mu ? take : Math.max(nx[i], take);
+      }
+      V[k] = cur;
+    }
+    const mustG = G.filter(i => must.has(i)), mustD = Dd.filter(i => must.has(i));
+    const combos = [];
+    for (const g of (mustG.length ? mustG : G)) for (let a = 0; a < Dd.length; a++) for (let bq = a + 1; bq < Dd.length; bq++) {
+      const da = Dd[a], db = Dd[bq];
+      if (mustD.length && !mustD.every(m => m === da || m === db)) continue;
+      const c = M.P[g].price + M.P[da].price + M.P[db].price; if (c > B) continue;
+      const tc = {}; for (const i of [g, da, db]) tc[M.P[i].club] = (tc[M.P[i].club] || 0) + 1;
+      if (Math.max(...Object.values(tc)) > cap) continue;
+      const v = val[g] + val[da] + val[db], ub = v + V[0][ix(B - c, 0, 0)]; if (ub < NEG / 2) continue;
+      combos.push({ ids: [g, da, db], c, v, ub, tc });
+    }
+    combos.sort((x, y) => y.ub - x.ub);
+    const best = []; let kth = -Infinity; const seen = new Set(); let nodes = 0; const LIM = 3e6; const chosen = [];
+    function add(v, ids) { const key = ids.slice().sort((x, y) => x - y).join(","); if (seen.has(key)) return; seen.add(key);
+      best.push({ val: v, ids }); best.sort((x, y) => y.val - x.val); if (best.length > K) best.pop(); if (best.length === K) kth = best[K - 1].val; }
+    function dfs(k, b, c, w, acc, tc, base) {
+      if (++nodes > LIM) return;
+      const ub = V[k][ix(b, c, w)]; if (ub < NEG / 2 || acc + ub + 1e-6 <= kth) return;
+      if (k === n) { add(acc, base.concat(chosen)); return; }
+      const i = Fs[k], p = M.P[i], isC = p.pos === "C";
+      if (p.price <= b && (isC ? c < nC : w < nW) && (tc[p.club] || 0) < cap) {
+        chosen.push(i); tc[p.club] = (tc[p.club] || 0) + 1;
+        dfs(k + 1, b - p.price, isC ? c + 1 : c, isC ? w : w + 1, acc + val[i], tc, base);
+        tc[p.club]--; chosen.pop();
+      }
+      if (!must.has(i)) dfs(k + 1, b, c, w, acc, tc, base);
+    }
+    for (const cb of combos) { if (cb.ub + 1e-6 <= kth || nodes > LIM) break; dfs(0, B - cb.c, 0, 0, cb.v, { ...cb.tc }, cb.ids); }
+    return { sols: best, exact: nodes <= LIM };
+  }
+
+  // ---------- apurit ----------
+  function windowVals(M, from, L, gamma) {
+    // S[d][i] = x_i(d) + sum_{k=1..L} gamma^k x_i(d+k)
+    const S = [];
+    for (let d = 0; d < M.D; d++) {
+      const s = new Float64Array(M.P.length);
+      if (d >= from) for (let i = 0; i < M.P.length; i++) {
+        const x = M.P[i].x; let v = x[d], g = 1;
+        for (let k = 1; k <= L && d + k < M.D; k++) { g *= gamma; v += g * x[d + k]; }
+        s[i] = v;
+      }
+      S.push(s);
+    }
+    return S;
+  }
+
+  function squadOk(M, sq) {
+    const R = M.R.slots; let g = 0, dd = 0, c = 0, w = 0, cost = 0; const tc = {};
+    for (const i of sq) { const p = M.P[i]; cost += p.price; tc[p.club] = (tc[p.club] || 0) + 1;
+      if (p.pos === "G") g++; else if (p.pos === "D") dd++; else if (p.pos === "C") c++; else w++; }
+    if (new Set(sq).size !== sq.length) return false;
+    return g === R.G && dd === R.D && c + w === R.F && c >= R.C[0] && c <= R.C[1] && w >= R.W[0] && w <= R.W[1] &&
+      cost <= M.B && Math.max(...Object.values(tc)) <= M.cap;
+  }
+
+  // ---------- säde-haku (beam search) ----------
+  function beam(M, start, cfg) {
+    const { from, S, bankVal, width } = cfg;
+    const keep = cfg.keep || new Set();
+    const D = M.D, bankMax = M.R.bank_max ?? 32;
+    const wcDay = cfg.wcDay; // undefined = ei villiä korttia, "auto" = mikä tahansa päivä, numero = tietty päivä
+    // järjestetyt ehdokaslistat päivittäin pelipaikoittain
+    const groups = { G: [], D: [], F: [] };
+    M.P.forEach((p, i) => groups[p.pos === "G" ? "G" : p.pos === "D" ? "D" : "F"].push(i));
+    const order = [];
+    for (let d = 0; d < D; d++) {
+      const o = {};
+      for (const k in groups) o[k] = groups[k].filter(i => S[d][i] > 0).sort((a, b) => S[d][b] - S[d][a]).slice(0, 60);
+      order.push(o);
+    }
+    const grp = p => (p.pos === "G" ? "G" : p.pos === "D" ? "D" : "F");
+    const R = M.R.slots;
+    const wcSq = {};
+    function wcSquad(d) { if (!(d in wcSq)) { const r = bestSquads(M, S[d], 1, keep); wcSq[d] = r.sols.length ? r.sols[0].ids : null; } return wcSq[d]; }
+
+    const HA = M.HA, HB = M.HB;
+    let states = start.map(s => ({ sq: s.sq.slice(), f: s.f, T: s.T, wc: s.wc, acc: 0, pot: 0, parent: null, act: null }));
+    const rho = cfg.rho ?? 0.65; const bv = f => { let v = 0, r = 1; for (let k = 0; k < f; k++) { v += r; r *= rho; } return v * bankVal; };
+
+    const until = Math.min(cfg.until ?? D, D);
+    for (let d = from; d < until; d++) {
+      const Sd = S[d], ord = order[d];
+      const kids = new Map();
+      const push = (st, sq, k, wcUsed, act) => {
+        let day = 0, pot = 0;
+        for (const i of sq) { day += M.P[i].x[d]; pot += Sd[i]; }
+        const f2 = wcUsed ? 0 : st.f - k;
+        const fn = Math.min(f2 + (d + 1 < D ? (M.R.free_per_round ?? 1) : 0), bankMax);
+        const T2 = st.T - k, acc = st.acc + day;
+        if (k > 0 && cfg.reserve && d < D - cfg.reserve.K && T2 < cfg.reserve.R) return;
+        const left = D - 1 - d, scale = Math.min(1, left / (cfg.bankH ?? 6));
+        const potv = st.acc + pot + scale * bv(Math.min(fn, T2));
+        let h1 = 0, h2 = 0;
+        for (const i of sq) { h1 = (h1 + HA[i]) >>> 0; h2 = (h2 ^ HB[i]) >>> 0; }
+        const key = h1 * 64 + fn * 2 + (st.wc || wcUsed ? 1 : 0) + "|" + h2;
+        const prev = kids.get(key);
+        if (!prev || prev.pot < potv) kids.set(key, { sq, f: fn, T: T2, wc: st.wc || wcUsed, acc, pot: potv, parent: st, act, day: d });
+      };
+      for (const st of states) {
+        push(st, st.sq, 0, false, null);
+        const maxK = Math.min(st.f, st.T);
+        if (maxK > 0) {
+          // laskurit
+          let cost = 0; const tc = {}; let nc = 0, nw = 0;
+          for (const i of st.sq) { const p = M.P[i]; cost += p.price; tc[p.club] = (tc[p.club] || 0) + 1; if (p.pos === "C") nc++; if (p.pos === "W") nw++; }
+          const inSq = new Set(st.sq);
+          const singles = [];
+          for (const out of st.sq) {
+            if (keep.has(out)) continue;
+            const po = M.P[out], g = grp(po), so = Sd[out];
+            let found = 0;
+            for (const j of ord[g]) {
+              if (Sd[j] <= so + 1e-9) break;
+              if (inSq.has(j)) continue;
+              const pj = M.P[j];
+              if (cost - po.price + pj.price > M.B) continue;
+              if ((tc[pj.club] || 0) - (pj.club === po.club ? 1 : 0) + 1 > M.cap) continue;
+              if (g === "F") { const c2 = nc - (po.pos === "C") + (pj.pos === "C"), w2 = nw - (po.pos === "W") + (pj.pos === "W");
+                if (c2 < R.C[0] || c2 > R.C[1] || w2 < R.W[0] || w2 > R.W[1]) continue; }
+              singles.push({ out, inn: j, gain: Sd[j] - so });
+              if (++found >= cfg.M) break;
+            }
+          }
+          singles.sort((a, b) => b.gain - a.gain);
+          for (const s of singles) push(st, st.sq.map(i => (i === s.out ? s.inn : i)), 1, false, [[s.out, s.inn]]);
+          const isC = i => M.P[i].pos === "C", isW = i => M.P[i].pos === "W";
+          const fOk = (c2, w2) => c2 >= R.C[0] && c2 <= R.C[1] && w2 >= R.W[0] && w2 <= R.W[1];
+          if (maxK >= 2) {
+            // kahden vaihdon yhdistelmät: myös budjettia vapauttavat parit (halvempi + kalliimpi)
+            const outs = st.sq.filter(i => !keep.has(i)).sort((a, b) => Sd[a] - Sd[b]).slice(0, cfg.pairOuts);
+            for (let a = 0; a < outs.length; a++) for (let b = a + 1; b < outs.length; b++) {
+              const o1 = outs[a], o2 = outs[b], p1 = M.P[o1], p2 = M.P[o2];
+              const L1 = ord[grp(p1)], L2 = ord[grp(p2)], n1 = Math.min(L1.length, cfg.pairCand), n2 = Math.min(L2.length, cfg.pairCand);
+              const baseCost = cost - p1.price - p2.price, base = Sd[o1] + Sd[o2];
+              const nc0 = nc - isC(o1) - isC(o2), nw0 = nw - isW(o1) - isW(o2);
+              const tcAdj = c => (tc[c] || 0) - (p1.club === c) - (p2.club === c);
+              let bestv = 1e-9, bp = null;
+              for (let x = 0; x < n1; x++) { const j1 = L1[x]; if (inSq.has(j1)) continue; const q1 = M.P[j1];
+                if (Sd[j1] + Sd[L2[0]] - base <= bestv) break;
+                if (tcAdj(q1.club) + 1 > M.cap) continue;
+                for (let y = 0; y < n2; y++) { const j2 = L2[y]; if (j2 === j1 || inSq.has(j2)) continue; const q2 = M.P[j2];
+                  const v = Sd[j1] + Sd[j2] - base; if (v <= bestv) break;
+                  if (baseCost + q1.price + q2.price > M.B) continue;
+                  if (tcAdj(q2.club) + 1 + (q1.club === q2.club) > M.cap) continue;
+                  if (grp(p1) === "F" || grp(p2) === "F") { if (!fOk(nc0 + isC(j1) + isC(j2), nw0 + isW(j1) + isW(j2))) continue; }
+                  bestv = v; bp = [j1, j2];
+                } }
+              if (bp) push(st, st.sq.map(i => (i === o1 ? bp[0] : i === o2 ? bp[1] : i)), 2, false, [[o1, bp[0]], [o2, bp[1]]]);
+            }
+          }
+          if (maxK >= 3 && singles.length) {
+            // ahne kolmen vaihdon ketju
+            const outs = st.sq.filter(i => !keep.has(i)).sort((a, b) => Sd[a] - Sd[b]).slice(0, 4);
+            let cur = st.sq.slice(), acts = [], cc = cost, cnc = nc, cnw = nw; const ctc = { ...tc }; const used = new Set(cur);
+            for (let step = 0; step < 3; step++) {
+              let bestv = 1e-9, bp = null;
+              for (const o of outs) { if (!used.has(o)) continue; const po = M.P[o], g = grp(po);
+                for (const j of ord[g].slice(0, g === "G" ? 8 : g === "D" ? 15 : 25)) { if (used.has(j)) continue; const v = Sd[j] - Sd[o]; if (v <= bestv) break;
+                  const pj = M.P[j];
+                  if (cc - po.price + pj.price > M.B) continue;
+                  if ((ctc[pj.club] || 0) - (pj.club === po.club) + 1 > M.cap) continue;
+                  if (g === "F" && !fOk(cnc - isC(o) + isC(j), cnw - isW(o) + isW(j))) continue;
+                  bestv = v; bp = [o, j]; } }
+              if (!bp) break;
+              const [o, j] = bp, po = M.P[o], pj = M.P[j];
+              cc += pj.price - po.price; ctc[po.club]--; ctc[pj.club] = (ctc[pj.club] || 0) + 1; cnc += isC(j) - isC(o); cnw += isW(j) - isW(o);
+              used.delete(o); used.add(j); cur = cur.map(i => (i === o ? j : i)); acts.push([o, j]);
+            }
+            if (acts.length === 3) push(st, cur, 3, false, acts);
+          }
+        }
+        if (!st.wc && wcDay !== undefined && (wcDay === "auto" || wcDay === d)) {
+          const w = wcSquad(d); if (w) push(st, w, 0, true, "wc");
+        }
+      }
+      states = [...kids.values()].sort((a, b) => b.pot - a.pot).slice(0, width);
+    }
+    states.sort((a, b) => b.acc - a.acc);
+    return states;
+  }
+
+  function reconstruct(st) {
+    const steps = [];
+    for (let s = st; s && s.parent; s = s.parent) steps.push({ day: s.day, act: s.act, sq: s.sq, f: s.f, T: s.T });
+    return steps.reverse();
+  }
+
+  // ---------- paikallishaku valmiin suunnitelman päälle ----------
+  // squads[d] (d = from..D-1): kunkin kierroksen joukkue (indeksit). ctx: {from, fresh, sq0, bank0, T, wcDay}
+  const grpOf = p => (p.pos === "G" ? "G" : p.pos === "D" ? "D" : "F");
+  function alignSlots(M, squads, ctx) {
+    // pelaaja pysyy samassa "paikassa"; uusi pelaaja korvaa saman ryhmän lähtevän
+    const { from } = ctx, D = M.D, slots = {};
+    let prev = (ctx.fresh ? squads[from] : ctx.sq0).slice();
+    const out = {};
+    const place = (sq, prevSlots) => {
+      const keepSet = new Set(sq), res = prevSlots.slice(), freeIdx = [];
+      res.forEach((p, k) => { if (!keepSet.has(p)) freeIdx.push(k); });
+      const have = new Set(res.filter(p => keepSet.has(p)));
+      const incoming = sq.filter(p => !have.has(p));
+      for (const p of incoming) {
+        const g = grpOf(M.P[p]);
+        const k = freeIdx.findIndex(k2 => grpOf(M.P[prevSlots[k2]]) === g);
+        if (k < 0) return null;
+        res[freeIdx[k]] = p; freeIdx.splice(k, 1);
+      }
+      return res;
+    };
+    let cur = prev;
+    for (let d = from; d < D; d++) { const r = d === ctx.wcDay ? orderLike(M, squads[d], cur) : place(squads[d], cur); if (!r) return null; out[d] = r; cur = r; }
+    return out;
+  }
+  function orderLike(M, sq, prevSlots) {             // villi kortti: järjestetään ryhmittäin samoihin paikkoihin
+    const by = { G: [], D: [], F: [] }; for (const p of sq) by[grpOf(M.P[p])].push(p);
+    return prevSlots.map(p => by[grpOf(M.P[p])].shift());
+  }
+  function transfersOk(M, slots, ctx) {
+    const bankMax = M.R.bank_max ?? 32;
+    let f = ctx.fresh ? 0 : ctx.bank0, T = ctx.T;
+    let prev = ctx.fresh ? null : ctx.sq0;
+    for (let d = ctx.from; d < M.D; d++) {
+      const sq = slots[d];
+      let t = 0;
+      if (prev) { const ps = new Set(prev); for (const p of sq) if (!ps.has(p)) t++; }
+      if (d === ctx.wcDay) f = 0;
+      else { if (t > f || t > T) return false; f -= t; T -= t; }
+      f = Math.min(f + (M.R.free_per_round ?? 1), bankMax);
+      prev = sq;
+    }
+    return true;
+  }
+  function dayOk(M, sq) {
+    let cost = 0, c = 0, w = 0; const tc = {};
+    const R = M.R.slots;
+    for (const i of sq) { const p = M.P[i]; cost += p.price; if ((tc[p.club] = (tc[p.club] || 0) + 1) > M.cap) return false; if (p.pos === "C") c++; else if (p.pos === "W") w++; }
+    if (cost > M.B || c < R.C[0] || c > R.C[1] || w < R.W[0] || w > R.W[1]) return false;
+    return new Set(sq).size === sq.length;
+  }
+  function improve(M, squads, ctx, maxIter) {
+    const D = M.D, from = ctx.from;
+    let slots = alignSlots(M, squads, ctx);
+    if (!slots) return null;
+    const pre = M.P.map(p => { const a = new Float64Array(D + 1); for (let d = 0; d < D; d++) a[d + 1] = a[d] + p.x[d]; return a; });
+    const sum = (i, a, b) => pre[i][b + 1] - pre[i][a];
+    const groups = { G: [], D: [], F: [] };
+    M.P.forEach((p, i) => { if (!ctx.excl || !ctx.excl.has(i)) groups[grpOf(p)].push(i); });
+    const keep = ctx.keep || new Set();
+    const total = () => { let t = 0; for (let d = from; d < D; d++) for (const i of slots[d]) t += M.P[i].x[d]; return t; };
+    const stints = () => {
+      const res = [];
+      for (let k = 0; k < 9; k++) { let a = from;
+        for (let d = from + 1; d <= D; d++) if (d === D || slots[d][k] !== slots[a][k] || d === ctx.wcDay) { res.push({ k, p: slots[a][k], a, b: d - 1 }); a = d; } }
+      return res;
+    };
+    const tryApply = (changes) => {          // changes: [[d, k, newPlayer]]
+      const old = changes.map(([d, k]) => slots[d][k]);
+      const touched = new Set();
+      for (const [d, k, q] of changes) { slots[d] = slots[d].slice(); slots[d][k] = q; touched.add(d); }
+      let ok = true;
+      for (const d of touched) if (!dayOk(M, slots[d])) { ok = false; break; }
+      if (ok) ok = transfersOk(M, slots, ctx);
+      if (!ok) changes.forEach(([d, k], j) => { slots[d] = slots[d].slice(); slots[d][k] = old[j]; });
+      return ok;
+    };
+    let best = total(), iter = 0, improved = true;
+    while (improved && iter++ < (maxIter || 30)) {
+      improved = false;
+      // A) korvaa jakso toisella pelaajalla
+      for (const st of stints()) {
+        if (keep.has(st.p)) continue;
+        if (!ctx.fresh && st.a === from && ctx.sq0.includes(st.p) && false) continue;
+        const cur = sum(st.p, st.a, st.b);
+        const cand = groups[grpOf(M.P[st.p])].map(q => [q, sum(q, st.a, st.b)]).filter(([, v]) => v > cur + 1e-6).sort((x, y) => y[1] - x[1]).slice(0, 40);
+        for (const [q] of cand) {
+          let clash = false; for (let d = st.a; d <= st.b; d++) if (slots[d].includes(q)) { clash = true; break; }
+          if (clash) continue;
+          const ch = []; for (let d = st.a; d <= st.b; d++) ch.push([d, st.k, q]);
+          if (tryApply(ch)) { improved = true; break; }
+        }
+      }
+      // B) siirrä vaihtopäivää (saman paikan peräkkäiset jaksot)
+      const sts = stints();
+      for (let j = 0; j + 1 < sts.length; j++) {
+        const s1 = sts[j], s2 = sts[j + 1];
+        if (s1.k !== s2.k || s1.b + 1 !== s2.a || s2.a === ctx.wcDay) continue;
+        let bestGain = 1e-6, bestCh = null;
+        for (let m = s1.a; m < s2.b; m++) {          // uusi viimeinen p1-päivä
+          if (m === s1.b) continue;
+          let gain = 0; const ch = [];
+          if (m < s1.b) { for (let d = m + 1; d <= s1.b; d++) { gain += M.P[s2.p].x[d] - M.P[s1.p].x[d]; ch.push([d, s1.k, s2.p]); } }
+          else { for (let d = s2.a; d <= m; d++) { gain += M.P[s1.p].x[d] - M.P[s2.p].x[d]; ch.push([d, s1.k, s1.p]); } }
+          if (gain > bestGain) {
+            let clash = false; for (const [d, , q] of ch) if (slots[d].includes(q)) { clash = true; break; }
+            if (!clash) { bestGain = gain; bestCh = ch; }
+          }
+        }
+        if (bestCh && tryApply(bestCh)) improved = true;
+      }
+      // C) siirrä vaihto toiseen kohtaan: poista vähiten arvokas vaihto ja lisää arvokkain uusi
+      const st3 = stints();
+      const removals = [];
+      for (let j = 0; j + 1 < st3.length; j++) {
+        const s1 = st3[j], s2 = st3[j + 1];
+        if (s1.k !== s2.k || s1.b + 1 !== s2.a || s2.a === ctx.wcDay) continue;
+        // jatketaan s1:n pelaajalla tai aloitetaan s2:n pelaaja jo s1:n alusta
+        removals.push({ loss: sum(s2.p, s2.a, s2.b) - sum(s1.p, s2.a, s2.b), ch: () => { const c = []; for (let d = s2.a; d <= s2.b; d++) c.push([d, s1.k, s1.p]); return c; } });
+        if (!(s1.a === from && !ctx.fresh)) removals.push({ loss: sum(s1.p, s1.a, s1.b) - sum(s2.p, s1.a, s1.b), ch: () => { const c = []; for (let d = s1.a; d <= s1.b; d++) c.push([d, s1.k, s2.p]); return c; } });
+      }
+      removals.sort((x, y) => x.loss - y.loss);
+      const inserts = [];
+      for (const st of st3) {
+        if (keep.has(st.p) || st.b - st.a < 1) continue;
+        for (let m = st.a; m < st.b; m++) {      // p pelaa a..m, q m+1..b
+          const cur = sum(st.p, m + 1, st.b);
+          const g = groups[grpOf(M.P[st.p])];
+          let bq = -1, bv = cur + 1e-6;
+          for (const q of g) { const v = sum(q, m + 1, st.b); if (v > bv) { bv = v; bq = q; } }
+          if (bq >= 0) inserts.push({ gain: bv - cur, k: st.k, a: m + 1, b: st.b, q: bq });
+        }
+      }
+      inserts.sort((x, y) => y.gain - x.gain);
+      let done = false;
+      for (const ins of inserts.slice(0, 25)) {
+        if (done) break;
+        for (const rm of removals.slice(0, 25)) {
+          if (ins.gain <= rm.loss + 1e-6) break;
+          const snapshot = {}; for (let d = from; d < D; d++) snapshot[d] = slots[d];
+          const r1 = rm.ch();
+          let ok = true;
+          for (const [d, k, q] of r1) { slots[d] = slots[d].slice(); slots[d][k] = q; }
+          let clash = false; for (let d = ins.a; d <= ins.b; d++) if (slots[d].includes(ins.q)) clash = true;
+          if (!clash) { for (let d = ins.a; d <= ins.b; d++) { slots[d] = slots[d].slice(); slots[d][ins.k] = ins.q; } }
+          ok = !clash;
+          if (ok) for (let d = from; d < D; d++) if (slots[d] !== snapshot[d] && !dayOk(M, slots[d])) { ok = false; break; }
+          if (ok) ok = transfersOk(M, slots, ctx);
+          const t = ok ? total() : -Infinity;
+          if (ok && t > best + 1e-6) { best = t; improved = true; done = true; break; }
+          for (let d = from; d < D; d++) slots[d] = snapshot[d];
+        }
+      }
+      best = total();
+    }
+    const out = {}; for (let d = from; d < D; d++) out[d] = slots[d];
+    return { squads: out, total: best };
+  }
+  function stepsFromSquads(M, squads, ctx) {
+    const steps = [], bankMax = M.R.bank_max ?? 32;
+    let f = ctx.fresh ? 0 : ctx.bank0, T = ctx.T, prev = ctx.fresh ? null : ctx.sq0;
+    for (let d = ctx.from; d < M.D; d++) {
+      const sq = squads[d];
+      let act = null;
+      if (d === ctx.wcDay && prev) { act = "wc"; f = 0; }
+      else if (prev) {
+        const ps = new Set(prev), ns = new Set(sq);
+        const outs = prev.filter(p => !ns.has(p)), ins = sq.filter(p => !ps.has(p));
+        if (outs.length) {
+          // parita saman ryhmän pelaajat
+          const pairs = [];
+          for (const o of outs) { const g = grpOf(M.P[o]); const k = ins.findIndex(i => grpOf(M.P[i]) === g); pairs.push([o, ins[k]]); ins.splice(k, 1); }
+          act = pairs; f -= pairs.length; T -= pairs.length;
+        }
+      }
+      f = Math.min(f + (M.R.free_per_round ?? 1), bankMax);
+      steps.push({ day: d, act, sq: sq.slice(), f, T });
+      prev = sq;
+    }
+    return steps;
+  }
+
+  // ---------- julkinen rajapinta ----------
+  // state: {from, squad: [pelaajaID], bank, transfersLeft, wildcardUsed}
+  function plan(M, state, o) {
+    o = o || {};
+    const from = state.from || 0;
+    const keep = new Set((o.keep || []).map(id => M.byId.get(id)).filter(i => i !== undefined));
+    const params = o.params || [{ L: 4, g: 0.85, bv: 2.5 }, { L: 7, g: 0.9, bv: 1.5 }, { L: 10, g: 0.92, bv: 3.5 }, { L: 3, g: 0.8, bv: 1.0 }];
+    const width = o.width || 150;
+    let best = null; const tried = [];
+    for (const pr of params) {
+      const S = windowVals(M, from, pr.L, pr.g);
+      let start;
+      if (state.squad && state.squad.length) {
+        const sq = state.squad.map(id => M.byId.get(id));
+        if (sq.some(i => i === undefined)) throw new Error("Tuntematon pelaaja joukkueessa");
+        start = [{ sq, f: state.bank ?? 1, T: state.transfersLeft ?? 32, wc: !!state.wildcardUsed }];
+      } else {
+        // aloitusjoukkue: parhaat kokoonpanot pitkän aikavälin arvoilla, vaihdot alkavat seuraavasta kierroksesta
+        const seeds = new Map();
+        for (const g of [0.85, 0.93, 0.97]) {
+          const v = windowVals(M, from, M.D, g)[from];
+          for (const s of bestSquads(M, v, o.seeds || 12, keep).sols) seeds.set(s.ids.slice().sort((a, b) => a - b).join(","), s.ids);
+        }
+        start = [...seeds.values()].map(sq => ({ sq, f: 0, T: state.transfersLeft ?? 32, wc: !!state.wildcardUsed }));
+      }
+      const res = beam(M, start, { from, S, bankVal: pr.bv, rho: pr.rho, bankH: pr.H, reserve: pr.R ? { R: pr.R, K: pr.K } : null, width, M: o.M || 4, pairOuts: o.pairOuts || 5, pairCand: o.pairCand || 14,
+        keep, wcDay: state.wildcardUsed ? undefined : o.wildcard });
+      const fresh = !(state.squad && state.squad.length);
+      for (const cand of res.slice(0, Math.max(1, o.polish ?? 2))) {
+        const steps = reconstruct(cand);
+        const wcStep = steps.find(s => s.act === "wc");
+        const ctx = { from, fresh, sq0: fresh ? null : start[0].sq, bank0: fresh ? 0 : start[0].f, T: start[0].T, wcDay: wcStep ? wcStep.day : null, keep };
+        const sq = {}; for (const s of steps) sq[s.day] = s.sq;
+        let total = cand.acc, squads = sq;
+        if (o.polish !== 0) { const imp = improve(M, sq, ctx, o.iters); if (imp && imp.total > total) { total = imp.total; squads = imp.squads; } }
+        tried.push({ pr, beam: cand.acc, acc: total });
+        if (!best || total > best.total) best = { total, steps: stepsFromSquads(M, squads, ctx) };
+      }
+    }
+    // uudelleenkäynnistykset suunnitelman keskeltä: sama tilanne, uusi haku loppujaksolle
+    if (o.restarts !== 0 && best.steps.length > 4) {
+      const fresh = !(state.squad && state.squad.length);
+      const ctx0 = { from, fresh, sq0: fresh ? null : (state.squad || []).map(id => M.byId.get(id)), bank0: fresh ? 0 : (state.bank ?? 1), T: state.transfersLeft ?? 32, keep };
+      const every = o.restartEvery || 3;
+      for (let pass = 0; pass < (o.restartPasses || 1); pass++)
+      for (let j = 1; j < best.steps.length - 1; j += every) {
+        const steps = best.steps, s0 = steps[j - 1], a = steps[j].day;
+        const wcUsedBefore = !!state.wildcardUsed || steps.slice(0, j).some(s => s.act === "wc");
+        const headPts = steps.slice(0, j).reduce((t, s) => t + s.sq.reduce((u, i) => u + M.P[i].x[s.day], 0), 0);
+        for (const pr of params) {
+          const S = windowVals(M, a, pr.L, pr.g);
+          const res = beam(M, [{ sq: s0.sq, f: s0.f, T: s0.T, wc: wcUsedBefore }], { from: a, S, bankVal: pr.bv, rho: pr.rho, width: Math.round(width * 0.7),
+            M: o.M || 4, pairOuts: o.pairOuts || 5, pairCand: o.pairCand || 14, keep, wcDay: wcUsedBefore ? undefined : o.wildcard });
+          const tail = reconstruct(res[0]);
+          if (headPts + res[0].acc > best.total + 1e-6) {
+            const sq = {}; for (const s of steps.slice(0, j)) sq[s.day] = s.sq; for (const s of tail) sq[s.day] = s.sq;
+            const wcStep = steps.slice(0, j).find(s => s.act === "wc") || tail.find(s => s.act === "wc");
+            const ctx = { ...ctx0, wcDay: wcStep ? wcStep.day : null };
+            let total = headPts + res[0].acc, squads = sq;
+            const imp = improve(M, sq, ctx, o.iters); if (imp && imp.total > total) { total = imp.total; squads = imp.squads; }
+            best = { total, steps: stepsFromSquads(M, squads, ctx) };
+            tried.push({ pr, restart: a, acc: total });
+          }
+        }
+      }
+    }
+    return { total: best.total, steps: best.steps, tried };
+  }
+
+  // Vaihtoehtoiset toimet ensimmäiselle kierrokselle (arvo lasketaan erikseen plan-funktiolla seuraavasta kierroksesta)
+  function alternatives(M, state, o) {
+    o = o || {};
+    const from = state.from || 0;
+    const keep = new Set((o.keep || []).map(id => M.byId.get(id)).filter(i => i !== undefined));
+    const params = o.params || [{ L: 4, g: 0.85, bv: 2.5 }, { L: 7, g: 0.9, bv: 1.5 }];
+    const sq = state.squad.map(id => M.byId.get(id));
+    const root = [{ sq, f: state.bank ?? 1, T: state.transfersLeft ?? 32, wc: !!state.wildcardUsed }];
+    const wcDay = state.wildcardUsed ? undefined : o.wildcard;
+    const S0 = windowVals(M, from, params[0].L, params[0].g);
+    const kids = beam(M, root, { from, S: S0, bankVal: params[0].bv, width: 400, M: 6, pairOuts: 6, pairCand: 16, keep, wcDay, until: from + 1 });
+    // erilaiset toimet: vaihdoton + parhaat vaihdot (sama toimi vain kerran)
+    const seen = new Set(), pick = [];
+    const keyOf = k => k.act === "wc" ? "wc" : k.act ? k.act.map(a => a.join(">")).sort().join("|") : "none";
+    const none = kids.find(k => !k.act);
+    for (const k of [none, ...kids.sort((a, b) => b.pot - a.pot)]) {
+      if (!k) continue; const key = keyOf(k); if (seen.has(key)) continue; seen.add(key); pick.push(k);
+      if (pick.length >= (o.n || 6)) break;
+    }
+    return pick.map(k => ({ act: k.act, first: k.acc, sq: k.sq,
+      next: { from: from + 1, squad: k.sq.map(i => M.P[i].id), bank: k.f, transfersLeft: k.T, wildcardUsed: !!k.wc } }));
+  }
+
+  const api = { prepare, plan, alternatives, bestSquads, squadOk, windowVals, beam, improve, stepsFromSquads };
+  if (typeof module !== "undefined" && module.exports) module.exports = api; else root.MonthlyPlanner = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+</script>
+<script>
+(function(){
+"use strict";
+const PL=window.MonthlyPlanner;
+const POSFI={G:"MV",D:"P",C:"KH",W:"LH"};
+const WD=["su","ma","ti","ke","to","pe","la"];
+const S={ds:null,P:[],byId:{},days:[],cur:0,M:null,plan:null,alts:null,view:null,my:null,keep:new Set(),excl:new Set(),
+  sortP:{k:"rx",d:-1},busy:false};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const f1=v=>v==null||isNaN(v)?"–":(+v).toFixed(1), f2=v=>v==null||isNaN(v)?"–":(+v).toFixed(2);
+const pct=v=>v==null||isNaN(v)?"–":Math.round(v*100)+" %";
+function store(k,v){try{localStorage.setItem("mk:"+k,JSON.stringify(v))}catch(e){}}
+function load(k,d){try{const v=localStorage.getItem("mk:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}}
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast._t);toast._t=setTimeout(()=>el.hidden=true,2600)}
+const dlab=iso=>{const d=new Date(iso+"T12:00:00");return `${WD[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}.`};
+const tlab=dt=>dt?`${WD[dt.getDay()]} ${dt.getDate()}.${dt.getMonth()+1}. klo ${String(dt.getHours()).padStart(2,"0")}.${String(dt.getMinutes()).padStart(2,"0")}`:"";
+
+// ---------- data ----------
+function useDataset(ds){
+  S.ds=ds;const F=ds.pfields,GF=ds.gfields,D=ds.days.length;
+  S.days=ds.days.map(([date,utc,n])=>({date,utc:utc?new Date(utc):null,n}));
+  S.P=ds.players.map(r=>{const o={};F.forEach((k,i)=>o[k]=r[i]);o.name=(o.fn+" "+o.ln).trim();
+    o.games=o.g.map(g=>{const q={};GF.forEach((k,i)=>q[k]=g[i]);return q});
+    o.xd=new Float64Array(D);o.gd=new Array(D).fill(null);for(const g of o.games){o.xd[g.d]+=g.x||0;o.gd[g.d]=g}
+    return o});
+  S.byId=Object.fromEntries(S.P.map(p=>[p.id,p]));
+  S.cur=currentRound();
+  const sel=load("locks",{k:[],e:[]});S.keep=new Set(sel.k.filter(id=>S.byId[id]));S.excl=new Set(sel.e.filter(id=>S.byId[id]));
+  restoreMy();
+  fillSelects();
+  $("#noData").hidden=true;
+  const upd=ds.updated.replace("T"," klo ");
+  const R=ds.rules;
+  $("#dataStamp").textContent=`Ennusteet ${dlab(ds.days[0][0])}–${dlab(ds.days[D-1][0])} (${D} kierrosta jäljellä datassa). Mallin ajo ${upd}. ${S.P.length} pelaajaa.`;
+  $("#rulesList").innerHTML=[`Budjetti ${R.budget} M, joukkueessa 1 MV, 2 P ja 6 H (2–3 KH, 3–4 LH)`,`Samasta joukkueesta enintään ${R.max_per_team} pelaajaa`,
+    `Kierros = NHL:n pelipäivä, vaihdot ennen päivän ensimmäistä ottelua`,`${R.free_per_round} ilmainen vaihto / kierros, säästyy (enint. ${R.bank_max}); yhteensä enintään ${R.transfers_total} vaihtoa`,
+    `Villi kortti (${R.wildcards} kpl): rajattomat vaihdot yhdellä kierroksella, nollaa säästetyt vaihdot`,`Jakso ${dlab(R.start)}–${dlab(R.end)} (NHL:n päivämäärät)`].map(t=>`<li>${esc(t)}</li>`).join("");
+  try{const today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York"}).format(new Date());const el=$("#staleNote");
+    const lastRun=ds.updated.slice(0,10);const ageH=(Date.now()-new Date(ds.updated).getTime())/36e5;
+    if(S.cur<D&&ageH>30){el.textContent=`Ennusteet on laskettu ${upd}. Aja malli uudelleen ennen seuraavaa takarajaa, niin kokoonpanot ja loukkaantumiset ovat ajan tasalla.`;el.hidden=false}else el.hidden=true}catch(e){}
+  replan();
+}
+function currentRound(){const now=Date.now();for(let i=0;i<S.days.length;i++){const d=S.days[i];
+  const t=d.utc?d.utc.getTime():new Date(d.date+"T23:00:00Z").getTime();if(t>now)return i}return S.days.length}
+
+// ---------- oma tilanne ----------
+// tallennetaan kierroksen PÄIVÄMÄÄRÄLLÄ, jotta tieto säilyy, vaikka data alkaisi myöhemmästä päivästä
+function restoreMy(){
+  const R=S.ds.rules;let my=load("my",null);
+  const curDate=S.cur<S.days.length?S.days[S.cur].date:null;
+  if(!my||!my.squad)my={date:curDate,squad:[],bank:S.cur===0?0:1,left:R.transfers_total,wcUsed:false,pre:S.cur===0};
+  if(my.date&&curDate&&my.date<curDate){            // kierroksia on mennyt: +1 ilmainen vaihto / kierros
+    const passed=countRounds(my.date,curDate);
+    if(my.squad.length)my.bank=Math.min(R.bank_max,(my.pre?0:my.bank)+passed);
+    my.pre=false}
+  if(curDate)my.date=curDate;my.squad=my.squad.filter(id=>S.byId[id]);S.my=my;saveMy();
+}
+function countRounds(a,b){// kierroksia (NHL:n pelipäiviä) välillä [a, b)
+  const all=S.ds.rounds||S.days.map(d=>d.date);return all.filter(d=>d>=a&&d<b).length}
+function saveMy(){store("my",S.my)}
+function saveLocks(){store("locks",{k:[...S.keep],e:[...S.excl]})}
+function preTournament(){return S.cur===0&&S.my.pre!==false}
+function squadCheck(ids){const R=S.ds.rules,s=R.slots;const ps=ids.map(id=>S.byId[id]).filter(Boolean);
+  const c={G:0,D:0,C:0,W:0},tc={};let cost=0;for(const p of ps){c[p.pos]++;tc[p.club]=(tc[p.club]||0)+1;cost+=p.price}
+  const errs=[];if(ps.length!==9)errs.push(`${ps.length}/9 pelaajaa`);
+  if(c.G!==s.G)errs.push(`MV ${c.G}/${s.G}`);if(c.D!==s.D)errs.push(`P ${c.D}/${s.D}`);
+  if(c.C+c.W!==s.F||c.C<s.C[0]||c.C>s.C[1]||c.W<s.W[0]||c.W>s.W[1])errs.push(`H ${c.C} KH + ${c.W} LH (pitää olla 6: 2–3 KH, 3–4 LH)`);
+  if(cost>R.budget+1e-9)errs.push(`hinta ${f1(cost)} > ${R.budget}`);
+  const over=Object.entries(tc).filter(([,n])=>n>R.max_per_team).map(([k])=>k);if(over.length)errs.push(`yli ${R.max_per_team} pelaajaa: ${over.join(", ")}`);
+  return {ok:!errs.length,errs,cost,ps}}
+
+// ---------- suunnitelma ----------
+function planOpts(){const acc=$("#acc").value;const wc=$("#wcMode").value;
+  const base=[{L:7,g:.9,bv:10,rho:.8,H:6,R:10,K:8},{L:3,g:.9,bv:16,rho:.8,H:6}];
+  const params=acc==="full"?[...base,{L:5,g:.9,bv:6,rho:.8,H:6},{L:7,g:.9,bv:10,rho:.8,H:6}]:base;
+  return {params,width:acc==="full"?220:150,M:8,pairOuts:7,pairCand:20,polish:1,restarts:0,keep:[...S.keep],wildcard:wc==="none"?undefined:wc==="auto"?"auto":+wc}}
+function planState(){const my=S.my;const chk=squadCheck(my.squad);
+  if(preTournament()||!chk.ok)return {from:S.cur,transfersLeft:my.left,wildcardUsed:my.wcUsed,fresh:true};
+  return {from:S.cur,squad:my.squad.slice(),bank:my.bank,transfersLeft:my.left,wildcardUsed:my.wcUsed}}
+// tarkka suunnitelma (monthly.py laskee koneella): käytetään, jos se alkaa samasta tilanteesta kuin oma joukkue
+function exactFor(st){const E=S.ds.exact;if(!E||!E.squads||!S.M)return null;
+  const curDate=S.days[S.cur].date;const j=E.dates.indexOf(curDate);if(j<0)return null;
+  const R=S.ds.rules;let req=E.state?{squad:E.state.squad.slice(),bank:E.state.bank,left:E.state.left}:null;
+  for(let d=0;d<j;d++){const sq=E.squads[d];if(req){const ps=new Set(req.squad);const t=sq.filter(id=>!ps.has(id)).length;req.bank-=t;req.left-=t}else req={squad:null,bank:0,left:R.transfers_total};
+    req={squad:sq.slice(),bank:Math.min(req.bank+R.free_per_round,R.bank_max),left:req.left}}
+  if(st.fresh){if(req)return null}
+  else{if(!req||!req.squad)return null;const a=new Set(req.squad);if(st.squad.length!==a.size||!st.squad.every(id=>a.has(id)))return null;
+    if(st.bank<req.bank||st.transfersLeft<req.left)return null}
+  const sqObj={};for(let k=j;k<E.dates.length;k++){const di=S.days.findIndex(d=>d.date===E.dates[k]);if(di<0)return null;
+    const ids=E.squads[k];if(ids.some(id=>S.excl.has(id)))return null;sqObj[di]=ids.map(id=>S.M.byId.get(id));if(sqObj[di].some(i=>i===undefined))return null}
+  for(let d=S.cur;d<S.days.length;d++)if(!sqObj[d])return null;
+  if(S.keep.size){for(const id of S.keep)if(st.squad&&st.squad.includes(id)&&!Object.values(sqObj).every(q=>q.includes(S.M.byId.get(id))))return null}
+  const ctx={from:S.cur,fresh:!!st.fresh,sq0:st.fresh?null:st.squad.map(id=>S.M.byId.get(id)),bank0:st.bank||0,T:st.transfersLeft,wcDay:null};
+  const steps=PL.stepsFromSquads(S.M,sqObj,ctx);let total=0;for(const s of steps)for(const i of s.sq)total+=S.M.P[i].x[s.day];
+  return {total,steps,E}}
+async function downloadState(){const my=S.my;const text=JSON.stringify({kind:"kuukausikone_tila",date:my.date,squad:my.squad,bank:my.bank,left:my.left,wcUsed:my.wcUsed,pre:!!my.pre,saved:new Date().toISOString()},null,1);
+  let dl=null;try{dl=window.claude&&window.claude.use?await window.claude.use("downloads"):null}catch(e){dl=null}
+  if(dl){try{await dl.save({filename:"kuukausikone_tila.json",data:text});toast("Tilanne tallennettu Lataukset-kansioon")}catch(e){if(e&&e.code!=="declined")toast("Tallennus ei onnistunut")}return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type:"application/json"}));a.download="kuukausikone_tila.json";document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);toast("Tilanne tallennettu Lataukset-kansioon")}
+let planTok=0;
+function replan(){
+  if(!S.ds)return;if(S.cur>=S.days.length){renderEnded();return}
+  const tok=++planTok;$("#busy").hidden=false;S.alts=null;
+  setTimeout(()=>{try{
+    S.M=PL.prepare(S.ds,{exclude:[...S.excl]});const st=planState();const o=planOpts();const t0=performance.now();
+    S.plan=PL.plan(S.M,st,o);S.plan.ms=Math.round(performance.now()-t0);S.plan.fresh=!!st.fresh;S.plan.src="js";S.view=null;
+    const ex=exactFor(st);if(ex&&ex.total>=S.plan.total-1e-6)S.plan={...S.plan,total:ex.total,steps:ex.steps,src:"exact",jsTotal:S.plan.total};
+    else if(ex)S.plan.exactTotal=ex.total;
+  }catch(err){S.plan=null;toast("Suunnitelmaa ei voitu laskea: "+(err&&err.message||err))}
+  $("#busy").hidden=true;renderAll();if(tok===planTok)setTimeout(()=>computeAlts(tok),60)},30)}
+function computeAlts(tok){
+  const st=planState();if(st.fresh||!S.plan){$("#alts").innerHTML='<span class="muted">Vaihtoehdot näytetään, kun oma joukkue on syötetty (Oma joukkue).</span>';$("#altInfo").textContent="";return}
+  const E=S.ds.exact;
+  if(S.plan.src==="exact"&&E&&E.alts){            // tarkat vaihtoehdot koneelta
+    const grp=p=>p.pos==="G"?"G":p.pos==="D"?"D":"F";const my=S.my.squad;const toIdx=id=>S.M.byId.get(id);
+    const actOf=sq0=>{const a=new Set(sq0),b=new Set(my);const outs=my.filter(id=>!a.has(id)),ins=sq0.filter(id=>!b.has(id));if(!outs.length)return null;
+      return outs.map(o=>{const k=ins.findIndex(i=>grp(S.byId[i])===grp(S.byId[o]));const i=ins.splice(k,1)[0];return [toIdx(o),toIdx(i)]})};
+    const f0=S.plan.steps[0];
+    S.alts=[{act:f0.act,first:f0.sq.reduce((s,i)=>s+S.M.P[i].x[S.cur],0),total:S.plan.total,isPlan:true},
+      ...E.alts.map(a=>({act:actOf(a.squad0),first:a.squad0.reduce((s,id)=>s+(S.byId[id]?S.byId[id].xd[S.cur]:0),0),total:a.total}))];
+    S.alts.sort((a,b)=>b.total-a.total);S.altsDone=true;S.altMs=0;S.altSrc="exact";renderAlts();renderAction();return}
+  S.altSrc="js";
+  $("#alts").innerHTML='<span class="muted">Lasketaan vaihtoehtoja…</span>';
+  const t0=performance.now();const o=planOpts();
+  let cands=[];try{cands=PL.alternatives(S.M,st,{...o,n:7})}catch(e){cands=[]}
+  const key=a=>a==="wc"?"wc":Array.isArray(a)&&a.length?a.map(x=>x.join(">")).sort().join("|"):"none";
+  const f0=S.plan.steps[0];
+  const mine={act:f0.act,first:f0.sq.reduce((s,i)=>s+S.M.P[i].x[S.cur],0),total:S.plan.total,isPlan:true};
+  S.alts=[mine];const seen=new Set([key(f0.act)]);
+  const queue=cands.filter(c=>{const k=key(c.act);if(seen.has(k))return false;seen.add(k);return true}).slice(0,5);
+  const step=()=>{if(tok!==planTok)return;if(!queue.length){S.altMs=Math.round(performance.now()-t0);S.altsDone=true;renderAlts();renderAction();return}
+    const c=queue.shift();let total=c.first,r=null;
+    try{if(c.next.from<S.days.length){r=PL.plan(S.M,c.next,{...o,polish:1});total+=r.total}}catch(e){}
+    const alt={act:c.act,first:c.first,total};S.alts.push(alt);
+    if(total>S.plan.total+0.05){          // löytyi parempi: suunnitelma vaihtuu tähän
+      const head={day:S.cur,act:c.act,sq:c.sq,f:c.next.bank,T:c.next.transfersLeft};
+      S.plan={...S.plan,total,steps:[head,...(r?r.steps:[])]};S.alts.forEach(x=>x.isPlan=false);alt.isPlan=true;S.view=null;renderAction();renderPlan()}
+    S.alts.sort((a,b)=>b.total-a.total);S.altMs=Math.round(performance.now()-t0);renderAlts();
+    setTimeout(step,0)};
+  S.altsDone=false;setTimeout(step,0)}
+
+const idOf=i=>S.M.P[i].id;
+const sn=p=>(p.fn?p.fn[0]+". ":"")+p.ln;
+function stepsIds(){return S.plan?S.plan.steps.map(s=>({...s,ids:s.sq.map(idOf),acts:Array.isArray(s.act)?s.act.map(([o,i])=>[idOf(o),idOf(i)]):s.act})):[]}
+
+// ---------- piirto ----------
+const RINK=`<svg viewBox="0 0 400 500" preserveAspectRatio="none" aria-hidden="true">
+<rect x="0" y="0" width="400" height="7" fill="var(--red)"/><path d="M155 0 A45 45 0 0 0 245 0" fill="none" stroke="var(--blue)" stroke-width="2"/>
+<rect x="0" y="168" width="400" height="11" fill="var(--blue)" opacity=".85"/>
+<circle cx="92" cy="128" r="5" fill="var(--red)"/><circle cx="308" cy="128" r="5" fill="var(--red)"/>
+<circle cx="100" cy="330" r="50" fill="none" stroke="var(--red)" stroke-width="2" opacity=".55"/><circle cx="300" cy="330" r="50" fill="none" stroke="var(--red)" stroke-width="2" opacity=".55"/>
+<circle cx="100" cy="330" r="5" fill="var(--red)"/><circle cx="300" cy="330" r="5" fill="var(--red)"/>
+<line x1="14" y1="446" x2="386" y2="446" stroke="var(--red)" stroke-width="2"/>
+<path d="M164 446 A36 36 0 0 1 236 446 Z" fill="var(--crease)" stroke="var(--red)" stroke-width="1.5"/>
+<rect x="184" y="446" width="32" height="12" rx="2" fill="none" stroke="var(--red)" stroke-width="2"/></svg>`;
+function formation(ps,d){const x=p=>p.xd[d];const C=ps.filter(p=>p.pos==="C").sort((a,b)=>x(b)-x(a)),W=ps.filter(p=>p.pos==="W").sort((a,b)=>x(b)-x(a)),rows=[];
+  while(C.length||W.length){const mid=C.shift()||W.shift();const l=W.shift()||C.shift(),r=W.shift()||C.shift();rows.push([l,mid,r].filter(Boolean))}
+  rows.push(ps.filter(p=>p.pos==="D"));rows.push(ps.filter(p=>p.pos==="G"));return rows}
+function oppText(p,d){const g=p.gd[d];if(!g)return "ei peliä";return (g.home?"vs ":"@ ")+g.opp+(p.pos==="G"&&g.a!=null?` · aloittaa ${pct(g.a)}`:"")}
+function tokenHTML(p,d,isNew){const g=p.gd[d];const lk=S.keep.has(p.id)?'<span class="lock">pidä</span>':(isNew?'<span class="lock">uusi</span>':"");
+  const warn=g&&p.pos==="G"&&g.b2b===2?'<span class="flag">B2B</span>':(!g?'<span class="flag off">ei peliä</span>':"");
+  return `<button class="tok${p.pos==="G"?" g":""}${isNew?" new":""}${g?"":" idle"}" data-pid="${p.id}" aria-label="${esc(p.name)}, ${f1(p.xd[d])} xPTS">${warn}${lk}
+  <div class="top"><span class="ps">${POSFI[p.pos]}</span><span>${esc(p.club)}</span></div><span class="nm">${esc(p.ln)}</span>
+  <span class="op">${esc(oppText(p,d))}</span>
+  <div class="bt"><span class="xp">${g?f1(p.xd[d]):"–"}</span><span class="pr">${f1(p.price)}</span></div></button>`}
+
+function renderSetup(){const el=$("#setupNote");if(!S.ds||!S.my){el.hidden=true;return}
+  const chk=squadCheck(S.my.squad);
+  if(preTournament()&&!S.my.squad.length){el.innerHTML='<b>Ennen ensimmäistä kierrosta</b><span>Alla on suositeltu aloitusjoukkue ja koko jakson vaihtosuunnitelma. Kun olet valinnut joukkueen pelissä, tallenna se, niin suunnitelma lasketaan jatkossa omasta joukkueestasi.</span>';el.hidden=false;return}
+  if(!preTournament()&&!chk.ok){el.innerHTML=`<b>Syötä nykyinen joukkueesi</b><span>Suunnitelma näyttää nyt parhaan joukkueen tyhjästä. Syötä oma joukkueesi ja säästetyt vaihdot välilehdellä Oma joukkue, niin saat vaihtosuositukset omalle joukkueellesi.${S.my.squad.length?" ("+esc(chk.errs.join(", "))+")":""}</span><span class="row"><button class="btn primary small" data-go="team">Oma joukkue</button></span>`;el.hidden=false;return}
+  el.hidden=true}
+function renderAll(){renderSetup();renderHeader();renderAction();renderPlan();renderTeam();renderPlayers();renderSched();renderAlts()}
+function renderHeader(){const d=S.days[S.cur];const n=$("#night");
+  if(!d){n.innerHTML="<b>Päättynyt</b><span>jakso on ohi</span>";return}
+  n.innerHTML=`<b>${dlab(d.date)}</b><span>kierros ${roundNo(S.cur)} · ${d.n} ottelua</span>`}
+function roundNo(i){const R=S.ds.rules;return countRounds(R.start,S.days[i].date)+1}
+function renderEnded(){$("#roundTitle").textContent="Jakso on päättynyt";$("#rink").innerHTML="";$("#planTable").innerHTML="";renderHeader()}
+
+function renderAction(){
+  if(!S.plan){$("#actionPanel").innerHTML='<span class="muted">Ei suunnitelmaa.</span>';return}
+  const steps=stepsIds(),d0=S.cur,day=S.days[d0],first=steps[0];
+  const viewIdx=S.view==null?0:S.view;const vs=steps[viewIdx];const vd=vs.day;
+  $("#roundTitle").textContent=(viewIdx===0?(S.plan.fresh?"Aloitusjoukkue":"Tämän kierroksen joukkue"):"Suunnitelma")+` · ${dlab(S.days[vd].date)}`;
+  $("#roundDeadline").textContent=S.days[vd].utc?"takaraja "+tlab(S.days[vd].utc):"";
+  const ps=vs.ids.map(id=>S.byId[id]);const prevIds=new Set(viewIdx===0?(S.plan.fresh?[]:S.my.squad):steps[viewIdx-1].ids);
+  const rows=formation(ps,vd);
+  $("#rink").style.setProperty("--rows",rows.length);
+  $("#rink").innerHTML=RINK+rows.map(r=>`<div class="rrow">${r.map(p=>tokenHTML(p,vd,!S.plan.fresh||viewIdx>0?!prevIds.has(p.id):false)).join("")}</div>`).join("");
+  const playing=ps.filter(p=>p.gd[vd]).length,dayPts=ps.reduce((s,p)=>s+p.xd[vd],0);
+  $("#rinkNote").innerHTML=(viewIdx!==0?`<button class="btn small" data-act="viewNow">Näytä tämä kierros</button> `:"")+`${playing}/9 pelaa tänä päivänä · ${f1(dayPts)} xPTS`;
+  const remain=S.plan.total,used=steps.reduce((s,x)=>s+(Array.isArray(x.acts)?x.acts.length:0),0);
+  const cost=ps.reduce((s,p)=>s+p.price,0);
+  $("#sumStats").innerHTML=[["Jakson xPTS",f1(remain)],["Tämä kierros",f1(steps[0].ids.reduce((s,id)=>s+S.byId[id].xd[d0],0))],
+    ["Vaihtoja suunnitelmassa",`${used}/${S.my.left}`],["Joukkueen hinta",f1(cost)]].map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+  // suositus
+  let h="";
+  if(S.plan.fresh){
+    h=`<h3>Suositeltu aloitusjoukkue</h3><p style="margin:0">Joukkue on valittu koko jakson odotettujen pisteiden mukaan ja niin, että tulevilla vaihdoilla saa eniten lisää. Kun olet valinnut sen pelissä, paina alla, niin suunnitelma laskee jatkossa sinun joukkueestasi.</p>
+      <div class="row"><button class="btn primary" data-act="useInitial">Valitsin tämän joukkueen</button><button class="btn" data-go="team">Syötä oma joukkue</button></div>`;
+  }else if(first.acts==="wc"){
+    h=`<h3>Käytä villi kortti tällä kierroksella</h3><p style="margin:0">Suunnitelma kokoaa joukkueen kokonaan uudelleen (vaihdot eivät kuluta kiintiötä). Säästetyt vaihdot nollautuvat.</p>${moveList(S.my.squad,first.ids)}`;
+  }else if(Array.isArray(first.acts)&&first.acts.length){
+    h=`<h3>Suositus: ${first.acts.length===1?"tee vaihto":`tee ${first.acts.length} vaihtoa`}</h3>${moveList(S.my.squad,first.ids)}${gainLine(first)}
+      <div class="row"><button class="btn primary" data-act="didTransfers">Tein vaihdot</button></div>`;
+  }else{
+    const nxt=steps.find(s=>Array.isArray(s.acts)&&s.acts.length||s.acts==="wc");
+    h=`<h3>Suositus: säästä vaihto</h3><p style="margin:0">Yksikään vaihto ei nyt nosta koko jakson pisteitä enemmän kuin vaihdon säästäminen myöhemmäksi.${nxt?` Seuraava vaihto suunnitelmassa: ${dlab(S.days[nxt.day].date)}${Array.isArray(nxt.acts)&&nxt.acts.length>1?` (${nxt.acts.length} vaihtoa)`:""}.`:""}</p>${gainLine(first)}`;
+  }
+  $("#actionPanel").innerHTML=h;
+}
+function moveList(oldIds,newIds){const o=new Set(oldIds),n=new Set(newIds);const out=oldIds.filter(id=>!n.has(id)).map(id=>S.byId[id]),inn=newIds.filter(id=>!o.has(id)).map(id=>S.byId[id]);
+  const li=(p,cls)=>`<span class="${cls}">${esc(p.name)}</span> <span class="muted">${esc(p.club)} · ${POSFI[p.pos]} · ${f1(p.price)}</span>`;
+  return `<div class="moves">${out.map((p,i)=>`<div class="mv">${li(p,"out")}<span class="arr">→</span>${inn[i]?li(inn[i],"in"):""}</div>`).join("")}</div>`}
+function gainLine(first){if(!S.alts||!S.altsDone)return '<p class="muted" style="margin:0">Vaihtoehtoja lasketaan…</p>';
+  const none=S.alts.find(a=>!a.act),best=S.alts[0];const pl=S.plan.total;
+  if(Array.isArray(first.acts)&&first.acts.length&&none)return `<p style="margin:0">Arvo: <b>+${f1(pl-none.total)} xPTS</b> koko jaksolla verrattuna vaihdon säästämiseen.</p>`;
+  if(!first.acts&&best&&best.act&&best!==none)return `<p class="muted" style="margin:0">Paras vaihto nyt (${actText(best.act)}) antaisi ${f1(best.total-pl)} xPTS koko jaksolla.</p>`;
+  return ""}
+function actText(act){if(act==="wc")return "villi kortti";if(!act||!act.length)return "ei vaihtoa";
+  return act.map(([o,i])=>`${sn(S.byId[idOf(o)])} → ${sn(S.byId[idOf(i)])}`).join(", ")}
+function renderAlts(){const el=$("#alts");if(!S.alts){return}
+  if(!S.alts.length){el.innerHTML='<span class="muted">Ei vaihtoehtoja.</span>';return}
+  const top=S.alts[0].total;
+  el.innerHTML=S.alts.map((a,i)=>{const d=a.total-top;return `<div class="alt"><div class="mv">${a.act==="wc"?"<b>Villi kortti</b>":a.act&&a.act.length?a.act.map(([o,n])=>`<span class="out">${esc(sn(S.byId[idOf(o)]))}</span> → <span class="in">${esc(sn(S.byId[idOf(n)]))}</span>`).join(", "):"<b>Säästä vaihto</b>"}
+    <div class="muted" style="font-size:12px">tämä kierros ${f1(a.first)} xPTS${a.isPlan?" · suunnitelman valinta":""}</div></div><div class="gain">${f1(a.total)}<small>${i===0?"paras":`${f1(d)} parhaaseen`}</small></div></div>`}).join("");
+  $("#altInfo").textContent=!S.altsDone?"lasketaan…":S.altSrc==="exact"?"koko jakson xPTS · tarkka optimointi":`koko jakson xPTS · selaimen haku ${(S.altMs/1000).toFixed(1)} s`}
+
+function renderPlan(){const t=$("#planTable");if(!S.plan){t.innerHTML="";return}
+  const steps=stepsIds();let prev=S.plan.fresh?null:S.my.squad;let tot=0;
+  const rows=steps.map((s,k)=>{const d=S.days[s.day];const ps=s.ids.map(id=>S.byId[id]);const pts=ps.reduce((a,p)=>a+p.xd[s.day],0);tot+=pts;
+    const playing=ps.filter(p=>p.gd[s.day]).length;let mv="";
+    if(s.acts==="wc")mv='<span class="pill acc">villi kortti</span>';
+    else if(Array.isArray(s.acts)&&s.acts.length)mv=s.acts.map(([o,i])=>`<span class="out">${esc(sn(S.byId[o]))}</span> → <span class="in">${esc(sn(S.byId[i]))}</span> <span class="muted">${esc(S.byId[i].club)}</span>`).join("<br>");
+    else if(k===0&&S.plan.fresh)mv='<span class="pill">aloitusjoukkue</span>';
+    prev=s.ids;
+    return `<tr class="${S.view===k?"sel":""}" data-view="${k}"><td class="l">${dlab(d.date)}</td><td>${d.n}</td><td class="l">${mv||'<span class="muted">–</span>'}</td><td>${playing}/9</td>
+      <td class="x" style="--w:${Math.min(100,pts/60*100).toFixed(0)}%">${f1(pts)}</td><td>${f1(tot)}</td><td>${s.acts==="wc"?0:s.f}</td></tr>`}).join("");
+  t.innerHTML=`<thead><tr><th class="l">Kierros</th><th>Otteluita</th><th class="l">Vaihdot</th><th>Pelaa</th><th>xPTS</th><th>Yhteensä</th><th>Säästössä seur.</th></tr></thead><tbody>${rows}</tbody>`;
+  const E=S.ds.exact;
+  $("#planInfo").textContent=S.plan.src==="exact"?`${f1(S.plan.total)} xPTS · tarkka optimointi koneellasi ${E.created.replace("T"," klo ")}${E.bound?` · yläraja ${f1(E.bound)}`:""}`
+    :`${f1(S.plan.total)} xPTS · selaimen haku ${(S.plan.ms/1000).toFixed(1)} s${E?" · tarkka suunnitelma ei koske tätä tilannetta":""}`}
+
+function renderTeam(){const my=S.my;if(!my)return;const chk=squadCheck(my.squad);
+  $("#teamCount").textContent=`${my.squad.length}/9 · ${f1(chk.cost)} / ${S.ds.rules.budget}`;
+  const ord={G:0,D:1,C:2,W:3};const ps=chk.ps.slice().sort((a,b)=>ord[a.pos]-ord[b.pos]||b.price-a.price);
+  $("#teamList").innerHTML=ps.length?ps.map(p=>`<div class="trow"><span class="ps2">${POSFI[p.pos]}</span><button class="lnk" data-pid="${p.id}">${esc(p.name)}</button><span class="muted">${esc(p.club)}</span><span class="num">${f1(p.price)}</span><button class="btn small" data-rm="${p.id}">Poista</button></div>`).join(""):'<span class="muted">Ei pelaajia. Ota suunnitelman joukkue tai lisää pelaajat haulla.</span>';
+  $("#teamCheck").innerHTML=chk.ok?'<span class="pill good">Joukkue kelpaa</span>':(my.squad.length?`<span class="pill warn">${esc(chk.errs.join(" · "))}</span>`:"");
+  $("#bank").value=my.bank;$("#left").value=my.left;$("#wcUsed").value=my.wcUsed?"1":"0";
+  const chips=[...[...S.keep].map(id=>`<span class="pill acc">pidä: ${esc(S.byId[id].name)} <button class="x" data-unkeep="${id}" aria-label="Poista">×</button></span>`),
+    ...[...S.excl].map(id=>`<span class="pill bad">ei: ${esc(S.byId[id].name)} <button class="x" data-unexcl="${id}" aria-label="Poista">×</button></span>`)];
+  $("#lockChips").innerHTML=chips.length?chips.join(""):'<span class="muted">Ei yhtään. Lukitse tai poista pelaajia Pelaajat-välilehdellä.</span>';
+  renderAddList()}
+function renderAddList(){const q=$("#addSearch").value.trim().toLowerCase();const el=$("#addList");if(!q){el.innerHTML="";return}
+  const my=new Set(S.my.squad);const hits=S.P.filter(p=>!my.has(p.id)&&(p.name.toLowerCase().includes(q)||p.club.toLowerCase()===q)).slice(0,8);
+  el.innerHTML=hits.map(p=>`<button class="pick" data-add="${p.id}"><span class="ps2">${POSFI[p.pos]}</span> ${esc(p.name)} <span class="muted">${esc(p.club)} · ${f1(p.price)}</span></button>`).join("")||'<span class="muted">Ei osumia.</span>'}
+
+function winEnd(){const v=$("#fWin").value;return v==="all"?S.days.length:Math.min(S.days.length,S.cur+(+v))}
+function b2bCount(p,from,to){let n=0;for(let d=from;d<to;d++){if(!p.gd[d])continue;const nx=S.days[d+1];
+  if(nx&&p.gd[d+1]&&(new Date(nx.date)-new Date(S.days[d].date))===864e5)n++}return n}
+function fillSelects(){const teams=[...new Set(S.P.map(p=>p.club))].sort();$("#fTeam").innerHTML='<option value="">Kaikki</option>'+teams.map(t=>`<option>${t}</option>`).join("");
+  const wc=$("#wcMode"),cur=load("wc","none");
+  wc.innerHTML='<option value="none">Ei käytetä</option><option value="auto">Paras kierros (haku valitsee)</option>'+S.days.map((d,i)=>i>=S.cur?`<option value="${i}">${dlab(d.date)}</option>`:"").join("");
+  wc.value=[...wc.options].some(o=>o.value===String(cur))?String(cur):"none";$("#acc").value=load("acc","fast")}
+function renderPlayers(){const t=$("#playersTable");if(!S.ds)return;
+  const pos=$("#fPos").value,team=$("#fTeam").value,mx=+$("#fPrice").value||99,q=$("#fSearch").value.trim().toLowerCase();
+  const a=S.cur,b=winEnd();const my=new Set(S.my.squad);
+  let rows=S.P.filter(p=>(!pos||p.pos===pos)&&(!team||p.club===team)&&p.price<=mx&&(!q||p.name.toLowerCase().includes(q))).map(p=>{let rx=0,gm=0;
+    for(let d=a;d<b;d++){if(p.gd[d]){rx+=p.xd[d];gm++}}return {p,rx,gm,pg:gm?rx/gm:0,b2b:b2bCount(p,a,b),ppx:rx/p.price,nx:p.gd[a]?p.xd[a]:null}});
+  const k=S.sortP.k,dir=S.sortP.d;rows.sort((x,y)=>{const u=k==="name"?x.p.name:k==="club"?x.p.club:k==="price"?x.p.price:x[k],v=k==="name"?y.p.name:k==="club"?y.p.club:k==="price"?y.p.price:y[k];
+    return (typeof u==="string"?u.localeCompare(v):(u??-1)-(v??-1))*dir});
+  rows=rows.slice(0,250);const mxv=Math.max(1,...rows.map(r=>r.rx));
+  const H=(key,lab,cls="")=>`<th class="${cls}" data-sort="${key}">${lab}${S.sortP.k===key?(S.sortP.d<0?" ▼":" ▲"):""}</th>`;
+  t.innerHTML=`<thead><tr><th class="l">Pp</th>${H("name","Pelaaja","l")}${H("club","Jouk.","l")}${H("price","Hinta")}${H("rx","xPTS")}${H("gm","Pelit")}${H("pg","xPTS/peli")}${H("b2b","B2B")}${H("ppx","xPTS/hinta")}${H("nx","Tämä kierros")}<th></th></tr></thead><tbody>${
+    rows.map(r=>{const p=r.p;const inn=my.has(p.id);return `<tr class="${inn?"sel":""}"><td class="l"><span class="ps2">${POSFI[p.pos]}</span></td><td class="l"><button class="lnk" data-pid="${p.id}">${esc(p.name)}</button>${inn?' <span class="pill acc">joukkueessa</span>':""}</td>
+    <td class="l">${esc(p.club)}</td><td class="num">${f1(p.price)}</td><td class="x" style="--w:${(r.rx/mxv*100).toFixed(0)}%">${f1(r.rx)}</td><td class="num">${r.gm}</td><td class="num">${f1(r.pg)}</td><td class="num">${r.b2b||""}</td><td class="num">${f2(r.ppx)}</td><td class="num">${r.nx==null?"–":f1(r.nx)}</td>
+    <td class="l"><button class="btn small" data-keep="${p.id}" aria-pressed="${S.keep.has(p.id)}">Pidä</button> <button class="btn small" data-excl="${p.id}" aria-pressed="${S.excl.has(p.id)}">Älä ota</button></td></tr>`}).join("")}</tbody>`}
+function renderSched(){const t=$("#schedTable");if(!S.ds)return;const a=S.cur,b=S.days.length;
+  const teams=[...new Set(S.P.map(p=>p.club))].sort();const grid={};
+  // joukkueen pelit: otetaan joukkueen paras kenttäpelaaja (pelit ja vastustaja)
+  for(const p of S.P){if(p.pos==="G")continue;for(const g of p.games){const k=p.club+"|"+g.d;if(!grid[k])grid[k]={opp:g.opp,home:g.home,x:0};}}
+  const teamX={};for(const p of S.P){if(p.pos==="G")continue;for(const g of p.games){const k=p.club+"|"+g.d;grid[k].x+=g.x||0}}
+  const rows=teams.map(tm=>{let n=0;const cells=[];for(let d=a;d<b;d++){const c=grid[tm+"|"+d];if(c)n++;cells.push(c)}return {tm,n,cells}}).sort((x,y)=>y.n-x.n||x.tm.localeCompare(y.tm));
+  const allX=Object.values(grid).map(c=>c.x).sort((x,y)=>x-y);const lo=allX[Math.floor(allX.length*.1)]||0,hi=allX[Math.floor(allX.length*.9)]||1;
+  const head=S.days.slice(a,b).map(d=>{const dd=new Date(d.date+"T12:00:00");return `<th title="${d.n} ottelua">${WD[dd.getDay()]}<br>${dd.getDate()}.${dd.getMonth()+1}.</th>`}).join("");
+  t.innerHTML=`<thead><tr><th class="l">Joukkue</th><th>Pelit</th>${head}</tr></thead><tbody>${rows.map(r=>`<tr><td class="l"><b>${r.tm}</b></td><td class="num">${r.n}</td>${r.cells.map((c,j)=>{if(!c)return '<td class="sg"></td>';
+    const d=a+j;const prev=S.days[d-1],nxt=S.days[d+1];const day=new Date(S.days[d].date).getTime();
+    const b2b=(prev&&grid[r.tm+"|"+(d-1)]&&day-new Date(prev.date).getTime()===864e5)||(nxt&&grid[r.tm+"|"+(d+1)]&&new Date(nxt.date).getTime()-day===864e5);
+    const lvl=Math.max(0,Math.min(1,(c.x-lo)/(hi-lo||1)));return `<td class="sg on${b2b?" b2b":""}" style="--l:${(.12+.55*lvl).toFixed(2)}">${c.home?"":"@"}${esc(c.opp)}</td>`}).join("")}</tr>`).join("")}</tbody>`}
+
+function openDetail(id){const p=S.byId[id];if(!p)return;const a=S.cur;
+  const rows=[];let tot=0;for(let d=a;d<S.days.length;d++){const g=p.gd[d];if(!g)continue;tot+=g.x;rows.push(`<tr><td class="l">${dlab(S.days[d].date)}</td><td class="l">${g.home?"vs":"@"} ${esc(g.opp)}${p.pos==="G"&&g.b2b?` <span class="pill warn">B2B ${g.b2b}.</span>`:""}</td><td class="num">${p.pos==="G"?pct(g.a):f2(g.a)}</td><td class="num">${p.pos==="G"?pct(g.b):f2(g.b)}</td><td class="x">${f1(g.x)}</td></tr>`)}
+  const role=p.pos==="G"?"":[p.pos==="D"&&p.pair?p.pair+". pari":"",p.pos!=="D"&&p.line?p.line+". ketju":"",p.pp?(p.pp===3?"YV1+YV2":"YV"+p.pp):""].filter(Boolean).join(", ");
+  $("#drawer").innerHTML=`<div class="row" style="justify-content:space-between;align-items:flex-start"><div><h2>${esc(p.name)}</h2><p class="lede" style="margin:2px 0 0">${esc(p.club)} · ${POSFI[p.pos]} · ${f1(p.price)}${role?" · "+esc(role):""}</p></div><button class="btn small" data-act="close">Sulje</button></div>
+  <div class="sum" style="margin-top:12px"><div class="stat"><div class="k">xPTS jäljellä</div><div class="v">${f1(tot)}</div></div><div class="stat"><div class="k">Pelejä</div><div class="v">${rows.length}</div></div><div class="stat"><div class="k">B2B-pareja</div><div class="v">${b2bCount(p,a,S.days.length)}</div></div><div class="stat"><div class="k">xPTS/hinta</div><div class="v">${f1(tot/p.price)}</div></div></div>
+  <div class="tw" style="margin-top:12px"><table><thead><tr><th class="l">Kierros</th><th class="l">Ottelu</th><th>${p.pos==="G"?"Aloittaa":"Pisteet"}</th><th>${p.pos==="G"?"Voitto":"Laukaukset"}</th><th>xPTS</th></tr></thead><tbody>${rows.join("")||'<tr><td colspan="5" class="l muted">Ei otteluita jäljellä.</td></tr>'}</tbody></table></div>
+  <div class="row" style="margin-top:14px">${S.my.squad.includes(p.id)?`<button class="btn" data-rm="${p.id}">Poista omasta joukkueesta</button>`:`<button class="btn" data-add="${p.id}">Lisää omaan joukkueeseen</button>`}
+   <button class="btn" data-keep="${p.id}" aria-pressed="${S.keep.has(p.id)}">${S.keep.has(p.id)?"Pidetään joukkueessa":"Pidä joukkueessa"}</button><button class="btn" data-excl="${p.id}" aria-pressed="${S.excl.has(p.id)}">${S.excl.has(p.id)?"Ei oteta":"Älä ota"}</button></div>`;
+  $("#drawer").hidden=false;$("#scrim").hidden=false}
+function closeDetail(){$("#drawer").hidden=true;$("#scrim").hidden=true}
+
+// ---------- tapahtumat ----------
+function setTab(t){$$("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===t)));$$("main > section").forEach(s=>s.hidden=s.id!=="tab-"+t);store("tab",t);if(location.hash!=="#"+t)history.replaceState(null,"","#"+t)}
+$$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+window.addEventListener("hashchange",()=>{const t=location.hash.slice(1);if($("#tab-"+t))setTab(t)});
+["#fPos","#fTeam","#fPrice","#fSearch","#fWin"].forEach(s=>$(s).addEventListener("input",renderPlayers));
+$("#addSearch").addEventListener("input",renderAddList);
+$("#wcMode").addEventListener("change",()=>{store("wc",$("#wcMode").value);replan()});
+$("#acc").addEventListener("change",()=>{store("acc",$("#acc").value);replan()});
+let teamT;function teamChanged(){saveMy();renderTeam();renderSetup();clearTimeout(teamT);teamT=setTimeout(replan,400)}
+$("#bank").addEventListener("change",()=>{S.my.bank=Math.max(0,Math.min(32,Math.round(+$("#bank").value||0)));S.my.pre=false;teamChanged()});
+$("#left").addEventListener("change",()=>{S.my.left=Math.max(0,Math.min(32,Math.round(+$("#left").value||0)));teamChanged()});
+$("#wcUsed").addEventListener("change",()=>{S.my.wcUsed=$("#wcUsed").value==="1";teamChanged()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeDetail()});
+$("#scrim").addEventListener("click",closeDetail);
+document.addEventListener("click",e=>{const t=e.target.closest("[data-sort],[data-pid],[data-act],[data-go],[data-add],[data-rm],[data-keep],[data-excl],[data-unkeep],[data-unexcl],[data-view]");if(!t)return;
+  if(t.dataset.sort){const s=S.sortP;if(s.k===t.dataset.sort)s.d*=-1;else{s.k=t.dataset.sort;s.d=["name","club"].includes(s.k)?1:-1}renderPlayers();return}
+  if(t.dataset.pid){openDetail(+t.dataset.pid);return}
+  if(t.dataset.go){setTab(t.dataset.go);return}
+  if(t.dataset.view!=null){S.view=+t.dataset.view;renderAction();renderPlan();window.scrollTo({top:0,behavior:"smooth"});return}
+  if(t.dataset.add){const id=+t.dataset.add;if(S.my.squad.length>=9){toast("Joukkueessa on jo 9 pelaajaa");return}S.my.squad.push(id);$("#addSearch").value="";teamChanged();if(!$("#drawer").hidden)openDetail(id);return}
+  if(t.dataset.rm){const id=+t.dataset.rm;S.my.squad=S.my.squad.filter(x=>x!==id);teamChanged();if(!$("#drawer").hidden)openDetail(id);return}
+  if(t.dataset.keep){const id=+t.dataset.keep;S.excl.delete(id);S.keep.has(id)?S.keep.delete(id):S.keep.add(id);saveLocks();renderTeam();renderPlayers();replan();if(!$("#drawer").hidden)openDetail(id);return}
+  if(t.dataset.excl){const id=+t.dataset.excl;S.keep.delete(id);S.excl.has(id)?S.excl.delete(id):S.excl.add(id);saveLocks();renderTeam();renderPlayers();replan();if(!$("#drawer").hidden)openDetail(id);return}
+  if(t.dataset.unkeep){S.keep.delete(+t.dataset.unkeep);saveLocks();renderTeam();replan();return}
+  if(t.dataset.unexcl){S.excl.delete(+t.dataset.unexcl);saveLocks();renderTeam();replan();return}
+  const a=t.dataset.act;
+  if(a==="close"){closeDetail();return}
+  if(a==="replan"){replan();return}
+  if(a==="viewNow"){S.view=null;renderAction();renderPlan();return}
+  if(a==="clearTeam"){S.my.squad=[];teamChanged();return}
+  if(a==="useInitial"){if(!S.plan)return;const st=stepsIds()[0];S.my.squad=st.ids.slice();if(S.cur===0){S.my.pre=true;S.my.bank=0}teamChanged();toast("Joukkue tallennettu");return}
+  if(a==="saveState"){downloadState();return}
+  if(a==="didTransfers"){if(!S.plan||S.plan.fresh)return;const st=stepsIds()[0];
+    if(st.acts==="wc"){S.my.squad=st.ids.slice();S.my.bank=0;S.my.wcUsed=true}
+    else if(Array.isArray(st.acts)&&st.acts.length){S.my.squad=st.ids.slice();S.my.bank-=st.acts.length;S.my.left-=st.acts.length}
+    else{toast("Tällä kierroksella ei ole suositeltuja vaihtoja");return}
+    teamChanged();toast("Vaihdot kirjattu");return}
+});
+
+// ---------- käynnistys ----------
+const t0=location.hash.slice(1)||load("tab","plan");if($("#tab-"+t0))setTab(t0);
+$("#noData").hidden=false;
+let lastUpd=null;
+async function fetchLatest(){try{const r=await fetch("data/monthly.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;const ds=await r.json();
+  if(ds&&ds.players&&ds.updated!==lastUpd){lastUpd=ds.updated;useDataset(ds)}}catch(e){}}
+fetchLatest();setInterval(fetchLatest,10*60*1000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){fetchLatest();if(S.ds&&currentRound()!==S.cur)useDataset(S.ds)}});
+window.kuukausikone={useDataset,S};
+})();
+
+</script>
+</body>
+</html>
