@@ -157,6 +157,7 @@ td.cell.has{background:var(--accent-soft)}
       <button role="tab" data-tab="goalies" aria-selected="false">Maalivahdit</button>
       <button role="tab" data-tab="games" aria-selected="false">Ottelut</button>
       <button role="tab" data-tab="bets" aria-selected="false">Vedonlyönti</button>
+      <button role="tab" data-tab="track" aria-selected="false">Seuranta</button>
       <button role="tab" data-tab="data" aria-selected="false">Data ja malli</button>
     </nav>
   </div>
@@ -235,6 +236,25 @@ td.cell.has{background:var(--accent-soft)}
   </section>
 
   <!-- DATA -->
+  <section id="tab-track" class="stack" hidden>
+    <div><h2>Mallin tarkkuuden seuranta</h2><p class="lede" id="trackLede">Joka illan ennusteita verrataan seuraavana päivänä NHL:n virallisista tilastoista laskettuihin toteutuneisiin pisteisiin samalla pisteytyksellä. Yksittäinen ilta on enimmäkseen sattumaa; luotettavia johtopäätöksiä saa muutaman viikon aineistosta. Ero = toteuma − ennuste, ± = 95 %:n epävarmuus.</p></div>
+    <div id="trackEmpty" class="panel empty">Seurannassa ei ole vielä arvioituja iltoja. Ensimmäinen yhteenveto tulee, kun malli on ajettu kahtena peräkkäisenä päivänä.</div>
+    <div id="trackBody" class="stack" hidden>
+      <div class="sum" id="trackStats"></div>
+      <div class="grid2">
+        <div class="panel stack"><h3>Kenttäpelaajat pelipaikoittain</h3><p class="muted" style="margin:0">Vain pelanneet; ennuste "jos pelaa".</p><div class="tw"><table id="trackPos"></table></div></div>
+        <div class="panel stack"><h3>Kalibrointi</h3><p class="muted" style="margin:0">Pelaajat jaettu viiteen yhtä suureen ryhmään ennusteen mukaan. Hyvä malli: jokaisessa ryhmässä toteuma ≈ ennuste.</p><div class="tw"><table id="trackCal"></table></div></div>
+      </div>
+      <div class="grid2">
+        <div class="panel stack"><h3>Pistekomponentit</h3><p class="muted" style="margin:0">Keskimäärin pelaajaa kohden (pisteinä).</p><div class="tw"><table id="trackComp"></table></div></div>
+        <div class="panel stack"><h3>Maalivahdit</h3><div id="trackGoal"></div></div>
+      </div>
+      <div class="panel stack"><h3>Mallin paras kokoonpano</h3><p class="muted" style="margin:0">Optimoijan kokoonpano illan budjetilla. Palkkarajat kirjataan komennolla <span class="mono">track.py cutline</span>.</p><div class="tw"><table id="trackLineups"></table></div></div>
+      <div class="panel stack"><h3>Illoittain</h3><div class="tw"><table id="trackDaily"></table></div></div>
+      <p class="muted" style="margin:0" id="trackStamp"></p>
+    </div>
+  </section>
+
   <section id="tab-data" class="stack" hidden>
     <div><h2>Data ja malli</h2><p class="lede" id="dataStamp">Ei dataa.</p></div>
     <div class="grid2">
@@ -246,10 +266,10 @@ td.cell.has{background:var(--accent-soft)}
         <h3>Päivitä illan data</h3>
         <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
           <li>Aja koneellasi <span class="mono">.\run_dfs.bat budjetti</span>, lähellä lukitusta, kun aloittavat maalivahdit on vahvistettu.</li>
-          <li>Valitse alta kansiosta <span class="mono">output_daily</span> molemmat tiedostot: <span class="mono">expected_points_per_game.csv</span> ja <span class="mono">expected_games.csv</span>.</li>
+          <li>Valitse alta kansiosta <span class="mono">output_daily</span> tiedostot <span class="mono">expected_points_per_game.csv</span> ja <span class="mono">expected_games.csv</span>, sekä seurantaa varten <span class="mono">seuranta.json</span>.</li>
           <li>Sivu laskee kokoonpanot ja todennäköisyydet uudelleen ja tallentaa datan, jolloin se näkyy myös puhelimessa.</li>
         </ol>
-        <input id="csvFiles" type="file" accept=".csv,text/csv" multiple aria-label="Mallin tulostiedostot">
+        <input id="csvFiles" type="file" accept=".csv,text/csv,.json,application/json" multiple aria-label="Mallin tulostiedostot">
         <p class="muted" style="margin:0" id="dataMsg"></p>
       </div>
       <div class="panel stack">
@@ -537,7 +557,31 @@ function renderBets(){
     (list.length?`<div class="tw"><table><thead><tr><th class="l">Kohde</th><th>Mallin tod.</th><th>Reilu</th><th>Kerroin</th><th>Arvo</th><th></th></tr></thead><tbody>${list.map(x=>`<tr><td class="l">${esc(x.label)}</td><td class="num">${pct(x.p)}</td><td class="num">${fair(x.p)}</td><td class="num">${x.o.toFixed(2)}</td><td class="edge ${x.e>0?"pos":"neg"}">${(x.e>0?"+":"")+(x.e*100).toFixed(1)} %</td><td><button class="btn small" data-delodds="${esc(x.key)}">Poista</button></td></tr>`).join("")}</tbody></table></div>
     <p class="muted" style="margin:0">Jätä varmuusmarginaali: malli on kalibroitu muutaman prosentin tarkkuudelle, joten pieni positiivinen arvo ei vielä tarkoita etua.</p>`:'<span class="muted">Klikkaa taulukon solua ja syötä vedonvälittäjän kerroin. Kertoimet tallentuvat vain tähän selaimeen.</span>');
 }
-function renderAll(){renderLineup();renderPlayers();renderGoalies();renderGames();renderBets()}
+function renderAll(){renderLineup();renderPlayers();renderGoalies();renderGames();renderBets();renderTrack()}
+// ---------- seuranta ----------
+function useTrack(t){if(!t||t.kind!=="tracking")return;S.track=t;try{localStorage.setItem("pk:track",JSON.stringify(t))}catch(e){};renderTrack()}
+function dCell(x){if(!x||x.diff==null)return '<td class="num">–</td>';const sig=x.ci!=null&&Math.abs(x.diff)>x.ci;
+  return `<td class="num"><span class="pill ${sig?(x.diff>0?"good":"bad"):""}">${x.diff>0?"+":""}${f2(x.diff)}</span>${x.ci!=null?` <span class="muted">±${f2(x.ci)}</span>`:""}</td>`}
+function rowsTable(id,rows,first){$(id).innerHTML=`<thead><tr><th class="l">${first}</th><th>n</th><th>Ennuste</th><th>Toteuma</th><th>Ero</th></tr></thead><tbody>${
+  rows.map(r=>`<tr><td class="l">${esc(r.lab||r.date)}</td><td class="num">${r.n}</td><td class="num">${f2(r.exp)}</td><td class="num">${f2(r.act)}</td>${dCell(r)}</tr>`).join("")}</tbody>`}
+function renderTrack(){const t=S.track;$("#trackEmpty").hidden=!!t;$("#trackBody").hidden=!t;if(!t)return;
+  const sk=t.skaters||{};const lu=(t.lineups||[]).filter(x=>x.act!=null);
+  const luAvg=lu.length?lu.reduce((s,x)=>s+x.act,0)/lu.length:null,luExp=lu.length?lu.reduce((s,x)=>s+x.exp,0)/lu.length:null;
+  $("#trackStats").innerHTML=[["Iltoja",t.days],["Pelaajaotteluita",sk.n??"–"],["Ero / pelaaja",sk.diff!=null?(sk.diff>0?"+":"")+f2(sk.diff):"–"],
+    ["Kokoonpano: ennuste → toteuma",luAvg!=null?`${f1(luExp)} → ${f1(luAvg)}`:"–"]].map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
+  rowsTable("#trackPos",[{lab:"Kaikki",...sk},...(t.by_pos||[])],"Ryhmä");
+  rowsTable("#trackCal",(t.calib||[]).map(r=>({...r,lab:r.lab+" xPTS"})),"Ennusteryhmä");
+  $("#trackComp").innerHTML=`<thead><tr><th class="l">Komponentti</th><th>Ennuste</th><th>Toteuma</th><th>Ero</th></tr></thead><tbody>${(t.comps||[]).map(c=>`<tr><td class="l">${esc(c.lab)}</td><td class="num">${f2(c.exp)}</td><td class="num">${f2(c.act)}</td><td class="num">${c.act-c.exp>0?"+":""}${f2(c.act-c.exp)}</td></tr>`).join("")}</tbody>`;
+  const g=t.goalies;
+  $("#trackGoal").innerHTML=g?`<dl class="kv"><dt>Aloituksia ennustettu</dt><dd>${f1(g.starts_pred)}</dd><dt>Aloituksia toteutui</dt><dd>${g.starts_act}</dd>
+    ${g.n?`<dt>Aloittaneet: ennuste (jos aloittaa)</dt><dd>${f2(g.exp)}</dd><dt>Aloittaneet: toteuma</dt><dd>${f2(g.act)}</dd><dt>Ero</dt><dd>${g.diff>0?"+":""}${f2(g.diff)} ±${f2(g.ci)}</dd>`:""}
+    ${(g.comps||[]).map(c=>`<dt>${esc(c.lab)}</dt><dd>${f2(c.exp)} / ${f2(c.act)}</dd>`).join("")}</dl>
+    <p class="muted" style="margin:6px 0 0">${t.play?`Kenttäpelaajien pelaaminen: ennustettu ${pct(t.play.pred)}, toteutui ${pct(t.play.act)}.`:""}</p>`:'<span class="muted">Ei maalivahtidataa.</span>';
+  $("#trackLineups").innerHTML=`<thead><tr><th class="l">Ilta</th><th>Ennuste</th><th>Toteuma</th><th class="l">Palkkarajat</th></tr></thead><tbody>${(t.lineups||[]).slice().reverse().map(r=>{
+    const cuts=(r.cuts||[]).map(c=>`${esc(c.contest)} €: ${f1(c.cutline)} ${r.act!=null?(r.act>=c.cutline?'<span class="pill good">palkoilla</span>':'<span class="pill">ei</span>'):""}`).join("<br>");
+    return `<tr title="${esc((r.players||[]).join(", "))}"><td class="l">${esc(r.date)}</td><td class="num">${f1(r.exp)}</td><td class="num">${r.act!=null?f1(r.act):"–"}</td><td class="l">${cuts||'<span class="muted">–</span>'}</td></tr>`}).join("")}</tbody>`;
+  rowsTable("#trackDaily",(t.daily||[]).slice().reverse(),"Ilta");
+  $("#trackStamp").textContent=`Seuranta ${t.first} – ${t.last}, päivitetty ${String(t.updated).replace("T"," klo ")}. Palkkarajoja kirjattu: ${t.cutlines||0}.`}
 
 // ---------- pelaajan erittely ----------
 function openDetail(id){const p=S.byId[id];if(!p)return;const G=p.pos==="G";
@@ -592,10 +636,13 @@ function editOdds(td){if(td.querySelector("input"))return;const key=td.dataset.o
 
 // ---------- tiedostojen lataus ----------
 $("#csvFiles").addEventListener("change",async e=>{const files=[...e.target.files];const msg=$("#dataMsg");if(!files.length)return;
-  try{let pg=null,gm=null;
-    for(const f of files){const rows=parseCSV(await f.text());if(!rows.length)continue;const h=Object.keys(rows[0]);
+  try{let pg=null,gm=null,tr=null;
+    for(const f of files){const txt=await f.text();
+      if(/\.json$/i.test(f.name)||txt.trim().startsWith("{")){try{const j=JSON.parse(txt);if(j&&j.kind==="tracking")tr=j}catch(e){}continue}
+      const rows=parseCSV(txt);if(!rows.length)continue;const h=Object.keys(rows[0]);
       if(h.includes("e_pts")&&h.includes("PlayerID")&&h.includes("date"))pg=rows;else if(h.includes("lam_home"))gm=rows;}
-    if(!pg){msg.textContent="Tiedostoa expected_points_per_game.csv ei löytynyt valinnasta. Valitse se kansiosta output_daily.";return}
+    if(tr){useTrack(tr);if(S.db&&S.isOwner){try{await S.db.doc("datasets/tracking").set(tr)}catch(err){}}}
+    if(!pg){msg.textContent=tr?"Seuranta päivitetty.":"Tiedostoa expected_points_per_game.csv ei löytynyt valinnasta. Valitse se kansiosta output_daily.";if(tr)toast("Seuranta päivitetty");return}
     const ds=buildDataset(pg,gm);useDataset(ds);
     msg.textContent=`Ladattu: ${ds.players.length} pelaajaa${gm?`, ${ds.games.length} ottelua`:" (otteluita ei valittu, Ottelut-välilehti jää tyhjäksi)"}.`;
     if(S.db&&S.isOwner){try{await S.db.doc("datasets/latest").set(ds);msg.textContent+=" Tallennettu: näkyy myös muilla laitteillasi."}catch(err){msg.textContent+=" Tallennus ei onnistunut ("+(err&&err.code||"virhe")+"); data on käytössä vain tällä kertaa."}}
@@ -608,12 +655,15 @@ const ui=load("ui",null);if(ui){$("#budget").value=ui.budget;$("#maxTeam").value
 const t0=location.hash.slice(1)||load("tab","lineup");if($("#tab-"+t0))setTab(t0);
 $("#noData").hidden=false;renderAll();
 const cached=load("ds",null);if(cached&&cached.players)useDataset(cached);
+const cachedT=load("track",null);if(cachedT)useTrack(cachedT);
 window.pistekone={useDataset,buildDataset,optimize,parseCSV};
 // GitHub Pages: illan data tiedostosta data/latest.json (publish.py päivittää sen)
 document.querySelectorAll(".own").forEach(e=>e.hidden=true);document.querySelectorAll(".vw").forEach(e=>e.hidden=false);
 async function fetchLatest(){try{const r=await fetch("data/latest.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;
   const ds=await r.json();if(ds&&ds.players&&(!S.ds||ds.updated!==S.ds.updated))useDataset(ds)}catch(e){}}
-fetchLatest();setInterval(fetchLatest,5*60*1000);
+async function fetchTrack(){try{const r=await fetch("data/tracking.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;
+  const t=await r.json();if(t&&(!S.track||t.updated!==S.track.updated))useTrack(t)}catch(e){}}
+fetchLatest();fetchTrack();setInterval(()=>{fetchLatest();fetchTrack()},5*60*1000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)fetchLatest()});
 })();
 </script>
