@@ -579,7 +579,7 @@ function renderTrack(){const t=S.track;$("#trackEmpty").hidden=!!t;$("#trackBody
     <p class="muted" style="margin:6px 0 0">${t.play?`Kenttäpelaajien pelaaminen: ennustettu ${pct(t.play.pred)}, toteutui ${pct(t.play.act)}.`:""}</p>`:'<span class="muted">Ei maalivahtidataa.</span>';
   $("#trackLineups").innerHTML=`<thead><tr><th class="l">Ilta</th><th>Ennuste</th><th>Toteuma</th><th class="l">Palkkarajat</th></tr></thead><tbody>${(t.lineups||[]).slice().reverse().map(r=>{
     const cuts=(r.cuts||[]).map(c=>`${esc(c.contest)} €: ${f1(c.cutline)} ${r.act!=null?(r.act>=c.cutline?'<span class="pill good">palkoilla</span>':'<span class="pill">ei</span>'):""}`).join("<br>");
-    return `<tr title="${esc((r.players||[]).join(", "))}"><td class="l">${esc(r.date)}</td><td class="num">${f1(r.exp)}</td><td class="num">${r.act!=null?f1(r.act):"–"}</td><td class="l">${cuts||'<span class="muted">–</span>'}</td></tr>`}).join("")}</tbody>`;
+    return `<tr title="${esc((r.players||[]).join(", "))}"><td class="l">${esc(r.date)}${r.slate?` <span class="muted">${r.slate==="yo"?"yö":esc(r.slate)}</span>`:""}</td><td class="num">${f1(r.exp)}</td><td class="num">${r.act!=null?f1(r.act):"–"}</td><td class="l">${cuts||'<span class="muted">–</span>'}</td></tr>`}).join("")}</tbody>`;
   rowsTable("#trackDaily",(t.daily||[]).slice().reverse(),"Ilta");
   $("#trackStamp").textContent=`Seuranta ${t.first} – ${t.last}, päivitetty ${String(t.updated).replace("T"," klo ")}. Palkkarajoja kirjattu: ${t.cutlines||0}.`}
 
@@ -656,7 +656,7 @@ const t0=location.hash.slice(1)||load("tab","lineup");if($("#tab-"+t0))setTab(t0
 $("#noData").hidden=false;renderAll();
 const cached=load("ds",null);if(cached&&cached.players)useDataset(cached);
 const cachedT=load("track",null);if(cachedT)useTrack(cachedT);
-window.pistekone={useDataset,buildDataset,optimize,parseCSV};
+window.pistekone={useDataset,buildDataset,optimize,parseCSV,useTrack};
 // GitHub Pages: illan data tiedostosta data/latest.json (publish.py päivittää sen)
 document.querySelectorAll(".own").forEach(e=>e.hidden=true);document.querySelectorAll(".vw").forEach(e=>e.hidden=false);
 async function fetchLatest(){try{const r=await fetch("data/latest.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;
