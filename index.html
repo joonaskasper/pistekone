@@ -279,7 +279,7 @@ td.cell.has{background:var(--accent-soft)}
           <li><b>Rooli ja jääaika:</b> Daily Faceoffin ketju, pari ja ylivoimakenttä sekä pelaajan jääaikahistoria. Ketjukaverit vaikuttavat syöttöihin.</li>
           <li><b>Ottelu:</b> joukkueiden xG-voima, vastustajan maalivahti, kotietu sekä Pinnaclen voitto- ja maalimäärälinjat.</li>
           <li><b>Maalivahdit:</b> laukaukset vastaan, päästetyt, voitto, 35+ torjuntaa ja nollapeli ehdollisena aloitukselle; aloitustodennäköisyys Daily Faceoffin aloittajasivulta.</li>
-          <li><b>Kokoonpano:</b> tarkka haku käy läpi kaikki sääntöjen sallimat yhdistelmät (1 MV, 2 P, 6 H, joista 2–3 KH ja 3–4 LH, budjetti, joukkueraja). Tulos on paras mahdollinen näillä xPTS-luvuilla.</li>
+          <li><b>Kokoonpano:</b> tarkka haku käy läpi kaikki sääntöjen sallimat yhdistelmät (1 MV, 2–3 P ja 5–6 H, yhteensä 9, hyökkääjistä 2–3 KH ja 3–4 LH, budjetti, joukkueraja). Tulos on paras mahdollinen näillä xPTS-luvuilla.</li>
           <li><b>Vedonlyönti:</b> pisteet negatiivisella binomijakaumalla (r = 12), laukaukset r = 8, maalit Poisson. Kalibroitu kauden 2025–26 pelikohtaisella datalla: maalit ja laukaukset ±1 %, pisteet 2–6 % alakanttiin.</li>
         </ul>
       </div>
@@ -295,7 +295,7 @@ td.cell.has{background:var(--accent-soft)}
 (function(){
 "use strict";
 // ---------- tila ----------
-const RULES={G:[1,1],D:[2,2],F:6,C:[2,3],W:[3,4]};
+const RULES={G:[1,1],D:[2,3],F:[5,6],C:[2,3],W:[3,4],N:9};
 const POSFI={G:"MV",D:"P",C:"KH",W:"LH"};
 const S={ds:null,P:[],byId:{},games:[],locks:new Set(),excl:new Set(),sols:[],solIdx:0,odds:{},sortP:{k:"x",d:-1},sortB:{k:"mp",d:-1},sortG:{k:"x",d:-1},db:null,user:null,isOwner:false};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -390,44 +390,57 @@ function optimize(budget,cap,K){
   const G=pool.filter(p=>p.pos==="G"),D=pool.filter(p=>p.pos==="D");
   const F=pool.filter(p=>p.pos==="C"||p.pos==="W").sort((a,b)=>b.x-a.x);
   const lockG=G.filter(p=>S.locks.has(p.id)),lockD=D.filter(p=>S.locks.has(p.id)),lockF=F.filter(p=>S.locks.has(p.id));
-  if(lockG.length>1||lockD.length>2||lockF.length>6)return {sols:[],err:"Liikaa lukittuja pelaajia samaan pelipaikkaan."};
+  if(lockG.length>1||lockD.length>RULES.D[1]||lockF.length>RULES.F[1]||lockD.length+lockF.length>RULES.N-1)return {sols:[],err:"Liikaa lukittuja pelaajia samaan pelipaikkaan."};
   const nC=RULES.C[1],nW=RULES.W[1],n=F.length,SZ=(B+1)*(nC+1)*(nW+1);
   const idx=(b,c,w)=>(b*(nC+1)+c)*(nW+1)+w;
   const NEG=-1e9;
-  // V[k]: paras arvo hyökkääjistä k.. kun budjettia b jäljellä ja valittu c KH + w LH (lopussa 6, KH 2-3, LH 3-4)
+  // V[k][b,c,w]: paras arvo, kun hyökkääjistä k.. valitaan TÄSMÄLLEEN c KH:ta ja w LH:ta budjetilla b
+  // (joukkueraja höllennetty). Sama taulukko antaa tarkan ylärajan sekä 5 että 6 hyökkääjän kokoonpanoille.
   const V=new Array(n+1);
   V[n]=new Float32Array(SZ).fill(NEG);
-  for(let b=0;b<=B;b++)for(let c=0;c<=nC;c++)for(let w=0;w<=nW;w++)if(c+w===RULES.F&&c>=RULES.C[0]&&w>=RULES.W[0])V[n][idx(b,c,w)]=0;
+  for(let b=0;b<=B;b++)V[n][idx(b,0,0)]=0;
   for(let k=n-1;k>=0;k--){const p=F[k],nx=V[k+1],cur=new Float32Array(SZ),pc=cost(p),isC=p.pos==="C",must=S.locks.has(p.id);
     for(let b=0;b<=B;b++)for(let c=0;c<=nC;c++)for(let w=0;w<=nW;w++){const i=idx(b,c,w);let take=NEG;
-      if(pc<=b){const c2=isC?c+1:c,w2=isC?w:w+1;if(c2<=nC&&w2<=nW){const v=nx[idx(b-pc,c2,w2)];if(v>NEG/2)take=v+p.x}}
+      if(pc<=b&&(isC?c>0:w>0)){const v=nx[idx(b-pc,isC?c-1:c,isC?w:w-1)];if(v>NEG/2)take=v+p.x}
       cur[i]=must?take:Math.max(nx[i],take)}
     V[k]=cur}
+  const opts=nf=>{const o=[];for(let c=RULES.C[0];c<=RULES.C[1];c++){const w=nf-c;if(w>=RULES.W[0]&&w<=RULES.W[1])o.push([c,w])}return o};
   const cp=cap>0?cap:99;
-  // MV x pari -yhdistelmät
-  const gList=lockG.length?lockG:G;
-  const pairs=[];
-  for(let i=0;i<D.length;i++)for(let j=i+1;j<D.length;j++){const a=D[i],b=D[j];
-    if(lockD.length&&!lockD.every(l=>l===a||l===b))continue;pairs.push([a,b])}
+  // Varmasti turhat pois: jos vähintään k samaa pelipaikkaa pelaavaa on halvempia ja vähintään yhtä hyviä (joukkuerajan
+  // täyttämät joukkueet pois laskien), pelaaja voidaan aina vaihtaa johonkin niistä. k = pelipaikan pelaajia kokoonpanossa.
+  const full=cp<99?Math.floor((RULES.N-1)/cp):0;
+  function prune(list,k){const s=list.slice().sort((a,b)=>b.x-a.x||cost(a)-cost(b));
+    return s.filter((p,j)=>{if(S.locks.has(p.id))return true;const dom=s.slice(0,j).filter(q=>cost(q)<=cost(p)&&q.x>=p.x);if(dom.length<k)return true;
+      const tc={};dom.forEach(q=>tc[q.club]=(tc[q.club]||0)+1);const top=Object.values(tc).sort((a,b)=>b-a).slice(0,full).reduce((a,b)=>a+b,0);
+      return dom.length-top<k})}
+  const gList=lockG.length?lockG:prune(G,1);
+  // MV x puolustajat (2 tai 3) -yhdistelmät; hyökkääjiä vastaavasti 6 tai 5
+  const dSets=[];
+  for(let nd=RULES.D[0];nd<=RULES.D[1];nd++){const nf=RULES.N-1-nd;if(nf<RULES.F[0]||nf>RULES.F[1]||lockF.length>nf||lockD.length>nd)continue;
+    const Dp=prune(D,nd);const rec=(start,acc)=>{if(acc.length===nd){if(lockD.every(l=>acc.includes(l)))dSets.push({ds:acc.slice(),nf});return}
+      for(let i=start;i<Dp.length;i++){acc.push(Dp[i]);rec(i+1,acc);acc.pop()}};rec(0,[])}
   const combos=[];
-  for(const g of gList)for(const [a,b] of pairs){const c=cost(g)+cost(a)+cost(b);if(c>B)continue;
-    const tc={};for(const p of [g,a,b])tc[p.club]=(tc[p.club]||0)+1;if(Math.max(...Object.values(tc))>cp)continue;
-    const v=g.x+a.x+b.x,ub=v+V[0][idx(B-c,0,0)];if(ub<NEG/2)continue;combos.push({g,a,b,c,v,ub,tc})}
+  for(const g of gList)for(const {ds,nf} of dSets){const pl=[g,...ds];const c=pl.reduce((s,p)=>s+cost(p),0);if(c>B)continue;
+    const tc={};for(const p of pl)tc[p.club]=(tc[p.club]||0)+1;if(Math.max(...Object.values(tc))>cp)continue;
+    const v=pl.reduce((s,p)=>s+p.x,0),os=opts(nf).map(([oc,ow])=>({oc,ow,u:V[0][idx(B-c,oc,ow)]})).filter(o=>o.u>NEG/2).sort((a,b)=>b.u-a.u);
+    if(!os.length)continue;combos.push({ids:pl.map(p=>p.id),c,v,ub:v+os[0].u,tc,os})}
   combos.sort((x,y)=>y.ub-x.ub);
   const best=[];let kth=-Infinity;const seen=new Set();
   function add(val,ids){const key=ids.slice().sort((x,y)=>x-y).join(",");if(seen.has(key))return;seen.add(key);
     best.push({val,ids});best.sort((x,y)=>y.val-x.val);if(best.length>K)best.pop();if(best.length===K)kth=best[K-1].val}
   let nodes=0;const LIM=4e6;
   const chosen=[];
+  // c, w = vielä valittavat KH ja LH
   function dfs(k,b,c,w,acc,tc,base){
     if(++nodes>LIM)return;
     const ub=V[k][idx(b,c,w)];if(ub<NEG/2||acc+ub+1e-3<=kth)return;
     if(k===n){add(acc,base.concat(chosen));return}
     const p=F[k],pc=cost(p),isC=p.pos==="C";
-    if(pc<=b&&(isC?c<nC:w<nW)&&(tc[p.club]||0)<cp){chosen.push(p.id);tc[p.club]=(tc[p.club]||0)+1;
-      dfs(k+1,b-pc,isC?c+1:c,isC?w:w+1,acc+p.x,tc,base);tc[p.club]--;chosen.pop()}
+    if(pc<=b&&(isC?c>0:w>0)&&(tc[p.club]||0)<cp){chosen.push(p.id);tc[p.club]=(tc[p.club]||0)+1;
+      dfs(k+1,b-pc,isC?c-1:c,isC?w:w-1,acc+p.x,tc,base);tc[p.club]--;chosen.pop()}
     if(!S.locks.has(p.id))dfs(k+1,b,c,w,acc,tc,base)}
-  for(const cb of combos){if(cb.ub+1e-3<=kth)break;if(nodes>LIM)break;dfs(0,B-cb.c,0,0,cb.v,{...cb.tc},[cb.g.id,cb.a.id,cb.b.id])}
+  for(const cb of combos){if(cb.ub+1e-3<=kth)break;if(nodes>LIM)break;
+    for(const o of cb.os){if(cb.v+o.u+1e-3<=kth)break;dfs(0,B-cb.c,o.oc,o.ow,cb.v,{...cb.tc},cb.ids)}}
   return {sols:best,exact:nodes<=LIM,ms:Math.round(performance.now()-t0),combos:combos.length}
 }
 function solve(){
@@ -461,7 +474,7 @@ function tokenHTML(p,isNew){const warn=p.pos!=="G"&&p.av<0.9?'<span class="flag"
   <div class="bt"><span class="xp">${f1(p.x)}</span><span class="pr">${f1(p.price)}</span></div></button>`}
 function renderLineup(){
   const r=RULES,capv=+$("#maxTeam").value;
-  $("#luRules").textContent=`1 MV · 2 P · 6 H (2–3 KH, 3–4 LH)${capv?` · max ${capv}/joukkue`:""}`;
+  $("#luRules").textContent=`1 MV · 2–3 P · 5–6 H (2–3 KH, 3–4 LH, yhteensä 9)${capv?` · max ${capv}/joukkue`:""}`;
   // lukitut
   const lc=[...S.locks].map(id=>S.byId[id]).filter(Boolean),ex=[...S.excl].map(id=>S.byId[id]).filter(Boolean);
   $("#lockChips").innerHTML=(lc.length||ex.length)?lc.map(p=>`<span class="pill acc">Lukittu: ${esc(p.name)} <button class="btn small" data-unlock="${p.id}" aria-label="Poista lukitus">×</button></span>`).join("")+ex.map(p=>`<span class="pill bad">Pois: ${esc(p.name)} <button class="btn small" data-unexcl="${p.id}" aria-label="Palauta">×</button></span>`).join("")+' <button class="btn small" data-act="clearsel">Tyhjennä</button>':'<span class="muted">Ei yhtään. Lukitse tai poista pelaajia Pelaajat-välilehdellä.</span>';
