@@ -184,6 +184,7 @@ td.cell.has{background:var(--accent-soft)}
     <div class="grid2">
       <div class="stack">
         <div class="row" style="justify-content:space-between"><h2 id="luTitle">Paras kokoonpano</h2><span class="muted" id="luRules"></span></div>
+        <div class="row" id="modeBox" hidden role="group" aria-label="Kokoonpanon tavoite"><button class="btn small" data-mode="opt">Paras odotus</button><button class="btn small" data-mode="win">Voittokokoonpano</button></div>
         <div id="rink"></div>
       </div>
       <div class="stack">
@@ -266,7 +267,7 @@ td.cell.has{background:var(--accent-soft)}
         <h3>Päivitä illan data</h3>
         <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
           <li>Aja koneellasi <span class="mono">.\run_dfs.bat budjetti</span>, lähellä lukitusta, kun aloittavat maalivahdit on vahvistettu.</li>
-          <li>Valitse alta kansiosta <span class="mono">output_daily</span> tiedostot <span class="mono">expected_points_per_game.csv</span> ja <span class="mono">expected_games.csv</span>, sekä seurantaa varten <span class="mono">seuranta.json</span>.</li>
+          <li>Valitse alta kansiosta <span class="mono">output_daily</span> tiedostot <span class="mono">expected_points_per_game.csv</span> ja <span class="mono">expected_games.csv</span>, sekä seurantaa ja voittokokoonpanoa varten <span class="mono">seuranta.json</span> ja <span class="mono">voitto.json</span>.</li>
           <li>Sivu laskee kokoonpanot ja todennäköisyydet uudelleen ja tallentaa datan, jolloin se näkyy myös puhelimessa.</li>
         </ol>
         <input id="csvFiles" type="file" accept=".csv,text/csv,.json,application/json" multiple aria-label="Mallin tulostiedostot">
@@ -297,7 +298,7 @@ td.cell.has{background:var(--accent-soft)}
 // ---------- tila ----------
 const RULES={G:[1,1],D:[2,3],F:[5,6],C:[2,3],W:[3,4],N:9};
 const POSFI={G:"MV",D:"P",C:"KH",W:"LH"};
-const S={ds:null,P:[],byId:{},games:[],locks:new Set(),excl:new Set(),sols:[],solIdx:0,odds:{},sortP:{k:"x",d:-1},sortB:{k:"mp",d:-1},sortG:{k:"x",d:-1},db:null,user:null,isOwner:false};
+const S={mode:"opt",win:null,ds:null,P:[],byId:{},games:[],locks:new Set(),excl:new Set(),sols:[],solIdx:0,odds:{},sortP:{k:"x",d:-1},sortB:{k:"mp",d:-1},sortG:{k:"x",d:-1},db:null,user:null,isOwner:false};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const f1=v=>v==null||isNaN(v)?"–":(+v).toFixed(1), f2=v=>v==null||isNaN(v)?"–":(+v).toFixed(2);
@@ -362,6 +363,8 @@ function useDataset(ds){
   S.P=ds.players.map(r=>{const o={};F.forEach((k,i)=>o[k]=r[i]);o.name=(o.fn+" "+o.ln).trim();o.pp=o.pp||0;o.av=o.av??1;o.x=o.x||0;
     o.ppx=o.price>0?o.x/o.price:0;if(o.pos!=="G"&&o.games===1)for(const [k,,f] of PROPS)o["p_"+k]=f(o);return o});
   S.byId=Object.fromEntries(S.P.map(p=>[p.id,p]));
+  const W=ds.win;S.win=W&&W.date===ds.date&&W.win&&W.win.players.every(id=>S.byId[id])?W:null;
+  S.mode=S.win&&load("mode","opt")==="win"?"win":"opt";
   S.games=(ds.games||[]).map(r=>{const o={};ds.gfields.forEach((k,i)=>o[k]=r[i]);return o});
   const key="sel:"+ds.date;const sel=load(key,{l:[],e:[]});
   S.locks=new Set(sel.l.filter(id=>S.byId[id]));S.excl=new Set(sel.e.filter(id=>S.byId[id]));
@@ -479,6 +482,8 @@ function renderLineup(){
   const lc=[...S.locks].map(id=>S.byId[id]).filter(Boolean),ex=[...S.excl].map(id=>S.byId[id]).filter(Boolean);
   $("#lockChips").innerHTML=(lc.length||ex.length)?lc.map(p=>`<span class="pill acc">Lukittu: ${esc(p.name)} <button class="btn small" data-unlock="${p.id}" aria-label="Poista lukitus">×</button></span>`).join("")+ex.map(p=>`<span class="pill bad">Pois: ${esc(p.name)} <button class="btn small" data-unexcl="${p.id}" aria-label="Palauta">×</button></span>`).join("")+' <button class="btn small" data-act="clearsel">Tyhjennä</button>':'<span class="muted">Ei yhtään. Lukitse tai poista pelaajia Pelaajat-välilehdellä.</span>';
   if(!S.ds){$("#rink").innerHTML='<div class="panel empty">Kokoonpano näkyy, kun illan data on ladattu.</div>';$("#sum").innerHTML="";$("#teamsBox").hidden=true;$("#alts").innerHTML="";$("#solveNote").textContent="";return}
+  $("#modeBox").hidden=!S.win;$$("#modeBox [data-mode]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mode===S.mode));
+  if(S.mode==="win"&&S.win){renderWin();return}
   const info=S.solveInfo||{};
   if(!S.sols.length){$("#rink").innerHTML=`<div class="panel empty">${esc(info.err||"Sääntöjen mukaista kokoonpanoa ei löytynyt. Tarkista budjetti, joukkueraja ja lukitukset.")}</div>`;$("#sum").innerHTML="";$("#teamsBox").hidden=true;$("#alts").innerHTML="";$("#solveNote").textContent="";return}
   const best=S.sols[0],sol=S.sols[S.solIdx]||best,ids=new Set(sol.ids),bestIds=new Set(best.ids);
@@ -504,13 +509,36 @@ function renderLineup(){
   $("#solveNote").textContent=info.exact?`Tarkka haku: ${info.combos.toLocaleString("fi")} maalivahti- ja puolustajayhdistelmää, kaikki sääntöjen sallimat hyökkääjävalinnat. Parempaa kokoonpanoa näillä luvuilla ei ole. (${info.ms} ms)`:"Haku keskeytettiin aikarajaan: tulos on hyvä mutta ei taatusti paras.";
 }
 
+// ---------- voittokokoonpano (lasketaan koneella simuloimalla, win.py) ----------
+function curIds(){return S.mode==="win"&&S.win?S.win.win.players:(S.sols[S.solIdx]||{ids:[]}).ids}
+function renderWin(){const W=S.win,w=W.win,o=W.opt,optIds=new Set(o.players);
+  const ps=w.players.map(id=>S.byId[id]);
+  $("#luTitle").textContent="Voittokokoonpano";
+  const rows=formation(ps);
+  $("#rink").innerHTML=`<div class="rink" style="--rows:${rows.length}">${RINK}${rows.map(rw=>`<div class="rrow">${rw.map(p=>tokenHTML(p,!optIds.has(p.id))).join("")}</div>`).join("")}</div>`;
+  const price=ps.reduce((s,p)=>s+p.price,0);
+  $("#sum").innerHTML=`<div class="stat"><div class="k">Voittajan tasolle</div><div class="v">${(w.p_win*100).toFixed(1)} %</div></div>
+    <div class="stat"><div class="k">Palkkarajalle</div><div class="v">${pct(w.p_cash)}</div></div>
+    <div class="stat"><div class="k">Odotus</div><div class="v">${f1(w.mean)}</div></div>
+    <div class="stat"><div class="k">Hinta</div><div class="v">${f1(price)}</div></div>`;
+  const tc={};ps.forEach(p=>tc[p.club]=(tc[p.club]||0)+1);
+  const row=(lab,r,b)=>`<tr><td class="l">${b?"<b>"+lab+"</b>":lab}</td><td class="num">${f1(r.mean)}</td><td class="num">${f1(r.p90)}</td><td class="num">${(r.p_win*100).toFixed(1)} %</td><td class="num">${pct(r.p_cash)}</td></tr>`;
+  const upd=W.updated?W.updated.replace("T"," klo "):"";
+  $("#teamsBox").hidden=false;
+  $("#teamsBox").innerHTML=`<div class="row" style="justify-content:space-between"><h3>Verrattuna parhaaseen odotukseen</h3><span class="muted">${Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>esc(t)+" "+n).join(" · ")}</span></div>
+   <div class="tw"><table><thead><tr><th class="l"></th><th>Odotus</th><th>Paras 10 %</th><th>Voittajan tasolle</th><th>Palkkarajalle</th></tr></thead><tbody>${row("Voittokokoonpano",w,true)}${row("Paras odotus",o)}</tbody></table></div>
+   <p class="muted" style="margin:0">Paras 10 % = pisteet, jotka ylittyvät joka kymmenentenä iltana. Voittajan taso noin ${f1(W.target)} pistettä. Merkintä vaihto = ei parhaan odotuksen kokoonpanossa.</p>`;
+  $("#alts").innerHTML="";
+  $("#solveNote").textContent=`Laskettu mallin ajossa ${upd} budjetilla ${W.budget}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}: ilta simuloitu 10 000 kertaa, ja valittu kokoonpano yltää useimmin kisan voittajan tasolle (${String(W.contest).replace(".",",")} € kisa). Sivun budjetti, lukitukset ja poistot eivät muuta tätä kokoonpanoa.`;
+}
+
 // ---------- piirto: taulukot ----------
 function sortRows(rows,s){return rows.sort((a,b)=>{const x=a[s.k],y=b[s.k];if(typeof x==="string"||typeof y==="string")return String(x??"").localeCompare(String(y??""))*s.d;return((x??-1e9)-(y??-1e9))*s.d})}
 function th(cols,s,tid){return "<thead><tr>"+cols.map(([k,l,c])=>`<th class="${c||""}" data-sort="${k}" data-t="${tid}" aria-sort="${s.k===k?(s.d>0?"ascending":"descending"):"none"}">${l}${s.k===k?(s.d>0?" ▲":" ▼"):""}</th>`).join("")+"</tr></thead>"}
 function renderPlayers(){
   if(!S.ds){$("#ptable").innerHTML='<tbody><tr><td class="empty">Ei dataa.</td></tr></tbody>';return}
   const fp=$("#fPos").value,ft=$("#fTeam").value,fm=+$("#fPrice").value||99,q=$("#fSearch").value.toLowerCase(),fa=$("#fAvail").value;
-  const inSol=new Set((S.sols[S.solIdx]||{ids:[]}).ids);
+  const inSol=new Set(curIds());
   let rows=S.P.filter(p=>p.pos!=="G"&&(!fp||p.pos===fp)&&(!ft||p.club===ft)&&p.price<=fm&&(!q||p.name.toLowerCase().includes(q))&&(fa==="all"||p.av>0.05));
   rows=sortRows(rows,S.sortP);const mx=Math.max(...rows.map(p=>p.x),1);
   const cols=[["pos","Pp","l"],["name","Pelaaja","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["role","Rooli","l"],["price","Hinta"],["x","xPTS"],["ppx","xPTS/hinta"],["toi","Jääaika"],["ms","Laukaukset"],["mp","Pisteet"],["av","Pelaa"],["act","","l"]];
@@ -524,7 +552,7 @@ function renderPlayers(){
 }
 function renderGoalies(){
   if(!S.ds){$("#gtable").innerHTML="";return}
-  const inSol=new Set((S.sols[S.solIdx]||{ids:[]}).ids);
+  const inSol=new Set(curIds());
   let rows=sortRows(S.P.filter(p=>p.pos==="G"&&p.av>0.02),S.sortG);const mx=Math.max(...rows.map(p=>p.x),1);
   const cols=[["name","Maalivahti","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["price","Hinta"],["av","Aloittaa"],["xi","Jos aloittaa"],["x","xPTS"],["pw","Voitto"],["sa","Laukauksia"],["ga","Päästetyt"],["s35","35+ torj."],["so","Nollapeli"],["act","","l"]];
   $("#gtable").innerHTML=th(cols,S.sortG,"G")+"<tbody>"+rows.map(p=>`<tr class="${inSol.has(p.id)?"sel":""}"><td class="l"><button class="btn small" style="border:0;padding:0;background:none;font-weight:600" data-detail="${p.id}">${esc(p.name)}</button></td><td class="l">${esc(p.club)}</td><td class="l">${esc(p.opp)}</td>
@@ -622,13 +650,14 @@ let solveT;function resolve(){clearTimeout(solveT);solveT=setTimeout(()=>{solve(
 ["#budget","#maxTeam","#nAlt"].forEach(s=>$(s).addEventListener("change",resolve));$("#budget").addEventListener("input",resolve);
 ["#fPos","#fTeam","#fPrice","#fSearch","#fAvail"].forEach(s=>$(s).addEventListener("input",renderPlayers));
 ["#bTeam","#bSearch","#bMin"].forEach(s=>$(s).addEventListener("input",renderBets));
-document.addEventListener("click",e=>{const t=e.target.closest("[data-sort],[data-lock],[data-excl],[data-unlock],[data-unexcl],[data-act],[data-sol],[data-pid],[data-detail],[data-go],[data-odds],[data-delodds]");if(!t)return;
+document.addEventListener("click",e=>{const t=e.target.closest("[data-mode],[data-sort],[data-lock],[data-excl],[data-unlock],[data-unexcl],[data-act],[data-sol],[data-pid],[data-detail],[data-go],[data-odds],[data-delodds]");if(!t)return;
   if(t.dataset.sort){const map={P:"sortP",B:"sortB",G:"sortG"}[t.dataset.t];const s=S[map];if(s.k===t.dataset.sort)s.d*=-1;else{s.k=t.dataset.sort;s.d=["name","club","opp","role","pos"].includes(s.k)?1:-1}
     ({P:renderPlayers,B:renderBets,G:renderGoalies})[t.dataset.t]();return}
   if(t.dataset.lock){const id=+t.dataset.lock;S.excl.delete(id);S.locks.has(id)?S.locks.delete(id):S.locks.add(id);saveSel();resolve();if(!$("#drawer").hidden)openDetail(id);toast(S.locks.has(id)?"Lukittu kokoonpanoon":"Lukitus poistettu");return}
   if(t.dataset.excl){const id=+t.dataset.excl;S.locks.delete(id);S.excl.has(id)?S.excl.delete(id):S.excl.add(id);saveSel();resolve();if(!$("#drawer").hidden)openDetail(id);toast(S.excl.has(id)?"Poistettu valinnoista":"Palautettu valintoihin");return}
   if(t.dataset.unlock){S.locks.delete(+t.dataset.unlock);saveSel();resolve();return}
   if(t.dataset.unexcl){S.excl.delete(+t.dataset.unexcl);saveSel();resolve();return}
+  if(t.dataset.mode){S.mode=t.dataset.mode;store("mode",S.mode);renderLineup();renderPlayers();renderGoalies();return}
   if(t.dataset.sol){S.solIdx=+t.dataset.sol;renderLineup();renderPlayers();renderGoalies();return}
   if(t.dataset.pid){openDetail(+t.dataset.pid);return}
   if(t.dataset.detail){openDetail(+t.dataset.detail);return}
@@ -649,14 +678,17 @@ function editOdds(td){if(td.querySelector("input"))return;const key=td.dataset.o
 
 // ---------- tiedostojen lataus ----------
 $("#csvFiles").addEventListener("change",async e=>{const files=[...e.target.files];const msg=$("#dataMsg");if(!files.length)return;
-  try{let pg=null,gm=null,tr=null;
+  try{let pg=null,gm=null,tr=null,wn=null;
     for(const f of files){const txt=await f.text();
-      if(/\.json$/i.test(f.name)||txt.trim().startsWith("{")){try{const j=JSON.parse(txt);if(j&&j.kind==="tracking")tr=j}catch(e){}continue}
+      if(/\.json$/i.test(f.name)||txt.trim().startsWith("{")){try{const j=JSON.parse(txt);if(j&&j.kind==="tracking")tr=j;if(j&&j.kind==="win")wn=j}catch(e){}continue}
       const rows=parseCSV(txt);if(!rows.length)continue;const h=Object.keys(rows[0]);
       if(h.includes("e_pts")&&h.includes("PlayerID")&&h.includes("date"))pg=rows;else if(h.includes("lam_home"))gm=rows;}
     if(tr){useTrack(tr);if(S.db&&S.isOwner){try{await S.db.doc("datasets/tracking").set(tr)}catch(err){}}}
+    if(!pg&&wn&&S.ds&&wn.date===S.ds.date){const ds=Object.assign({},S.ds,{win:wn});useDataset(ds);
+      if(S.db&&S.isOwner){try{await S.db.doc("datasets/latest").set(ds)}catch(err){}}else{try{localStorage.setItem("pk:ds",JSON.stringify(ds))}catch(err){}}
+      msg.textContent="Voittokokoonpano lisätty.";toast("Voittokokoonpano lisätty");return}
     if(!pg){msg.textContent=tr?"Seuranta päivitetty.":"Tiedostoa expected_points_per_game.csv ei löytynyt valinnasta. Valitse se kansiosta output_daily.";if(tr)toast("Seuranta päivitetty");return}
-    const ds=buildDataset(pg,gm);useDataset(ds);
+    const ds=buildDataset(pg,gm);if(wn&&wn.date===ds.date)ds.win=wn;useDataset(ds);
     msg.textContent=`Ladattu: ${ds.players.length} pelaajaa${gm?`, ${ds.games.length} ottelua`:" (otteluita ei valittu, Ottelut-välilehti jää tyhjäksi)"}.`;
     if(S.db&&S.isOwner){try{await S.db.doc("datasets/latest").set(ds);msg.textContent+=" Tallennettu: näkyy myös muilla laitteillasi."}catch(err){msg.textContent+=" Tallennus ei onnistunut ("+(err&&err.code||"virhe")+"); data on käytössä vain tällä kertaa."}}
     else{msg.textContent+=" Data on käytössä tässä selaimessa.";try{localStorage.setItem("pk:ds",JSON.stringify(ds))}catch(err){}}
