@@ -307,6 +307,15 @@ main > .notice{margin-bottom:14px}
 (function (root) {
   "use strict";
   const UNIT = 10;
+  // Pelipaikkasäännöt: määrä tai väli [min, max]; size = pelaajia yhteensä (esim. 1 MV, 2-3 P, 5-6 H = 9)
+  const rg = v => (Array.isArray(v) ? v : [v, v]);
+  function slotRules(R) {
+    const s = R.slots, G = rg(s.G), Dd = rg(s.D), C = rg(s.C), W = rg(s.W);
+    const F = s.F !== undefined ? rg(s.F) : [C[0] + W[0], C[1] + W[1]];
+    return { G, D: Dd, C, W, F, N: R.size || G[0] + Dd[0] + F[0] };
+  }
+  const countsOk = (Q, g, dd, c, w) => g >= Q.G[0] && g <= Q.G[1] && dd >= Q.D[0] && dd <= Q.D[1] && c >= Q.C[0] && c <= Q.C[1] &&
+    w >= Q.W[0] && w <= Q.W[1] && c + w >= Q.F[0] && c + w <= Q.F[1] && g + dd + c + w === Q.N;
 
   function prepare(ds, opt) {
     opt = opt || {};
@@ -328,12 +337,12 @@ main > .notice{margin-bottom:14px}
     let seed = 12345;
     const rnd32 = () => { seed = (seed * 1103515245 + 12345) >>> 0; return seed; };
     const HA = new Uint32Array(P.length).map(() => rnd32() >>> 8), HB = new Uint32Array(P.length).map(() => rnd32());
-    return { R, D, P, byId, HA, HB, B: Math.floor(R.budget * UNIT + 1e-6), cap: R.max_per_team || 99 };
+    return { R, Q: slotRules(R), D, P, byId, HA, HB, B: Math.floor(R.budget * UNIT + 1e-6), cap: R.max_per_team || 99 };
   }
 
   // ---------- tarkka yhden kierroksen optimointi annetuilla arvoilla (kuten Pistekone) ----------
   function bestSquads(M, val, K, must) {
-    const R = M.R.slots, B = M.B, cap = M.cap;
+    const Q = M.Q, B = M.B, cap = M.cap;
     must = must || new Set();
     const ok = i => val[i] > 0 || must.has(i);
     const idx = M.P.map((_, i) => i).filter(ok);
@@ -346,50 +355,66 @@ main > .notice{margin-bottom:14px}
       if (!L.includes(m)) L.push(m);
     }
     Fs.sort((a, b) => val[b] - val[a]);
-    const nC = R.C[1], nW = R.W[1], n = Fs.length, SZ = (B + 1) * (nC + 1) * (nW + 1);
+    // V[k][b,c,w]: paras arvo, kun hyökkääjistä k.. valitaan TÄSMÄLLEEN c KH:ta ja w LH:ta budjetilla b
+    const nC = Q.C[1], nW = Q.W[1], n = Fs.length, SZ = (B + 1) * (nC + 1) * (nW + 1);
     const ix = (b, c, w) => (b * (nC + 1) + c) * (nW + 1) + w;
     const NEG = -1e9;
     const V = new Array(n + 1);
     V[n] = new Float32Array(SZ).fill(NEG);
-    for (let b = 0; b <= B; b++) for (let c = 0; c <= nC; c++) for (let w = 0; w <= nW; w++)
-      if (c + w === R.F && c >= R.C[0] && w >= R.W[0]) V[n][ix(b, c, w)] = 0;
+    for (let b = 0; b <= B; b++) V[n][ix(b, 0, 0)] = 0;
     for (let k = n - 1; k >= 0; k--) {
       const p = M.P[Fs[k]], nx = V[k + 1], cur = new Float32Array(SZ), pc = p.price, isC = p.pos === "C", mu = must.has(Fs[k]), v0 = val[Fs[k]];
       for (let b = 0; b <= B; b++) for (let c = 0; c <= nC; c++) for (let w = 0; w <= nW; w++) {
         const i = ix(b, c, w); let take = NEG;
-        if (pc <= b) { const c2 = isC ? c + 1 : c, w2 = isC ? w : w + 1; if (c2 <= nC && w2 <= nW) { const v = nx[ix(b - pc, c2, w2)]; if (v > NEG / 2) take = v + v0; } }
+        if (pc <= b && (isC ? c > 0 : w > 0)) { const v = nx[ix(b - pc, isC ? c - 1 : c, isC ? w : w - 1)]; if (v > NEG / 2) take = v + v0; }
         cur[i] = mu ? take : Math.max(nx[i], take);
       }
       V[k] = cur;
     }
-    const mustG = G.filter(i => must.has(i)), mustD = Dd.filter(i => must.has(i));
+    const opts = nf => { const o = []; for (let c = Q.C[0]; c <= Q.C[1]; c++) { const w = nf - c; if (w >= Q.W[0] && w <= Q.W[1]) o.push([c, w]); } return o; };
+    // varmasti turhat pois: k halvempaa ja vähintään yhtä hyvää saman pelipaikan pelaajaa (joukkuerajan täyttämät pois laskien)
+    const full = cap < 99 ? Math.floor((Q.N - 1) / cap) : 0;
+    const prune = (list, k) => list.filter((p, j) => {
+      if (must.has(p)) return true;
+      const dom = list.slice(0, j).filter(q => M.P[q].price <= M.P[p].price && val[q] >= val[p]); if (dom.length < k) return true;
+      const tc = {}; dom.forEach(q => (tc[M.P[q].club] = (tc[M.P[q].club] || 0) + 1));
+      return dom.length - Object.values(tc).sort((a, b) => b - a).slice(0, full).reduce((a, b) => a + b, 0) < k;
+    });
+    const mustG = G.filter(i => must.has(i)), mustD = Dd.filter(i => must.has(i)), mustF = Fs.filter(i => must.has(i));
+    const dSets = [];
+    for (let nd = Q.D[0]; nd <= Q.D[1]; nd++) {
+      const nf = Q.N - Q.G[0] - nd; if (nf < Q.F[0] || nf > Q.F[1] || mustD.length > nd || mustF.length > nf) continue;
+      const Dp = prune(Dd, nd);
+      const rec = (start, acc) => { if (acc.length === nd) { if (mustD.every(m => acc.includes(m))) dSets.push({ ds: acc.slice(), nf }); return; }
+        for (let i = start; i < Dp.length; i++) { acc.push(Dp[i]); rec(i + 1, acc); acc.pop(); } };
+      rec(0, []);
+    }
     const combos = [];
-    for (const g of (mustG.length ? mustG : G)) for (let a = 0; a < Dd.length; a++) for (let bq = a + 1; bq < Dd.length; bq++) {
-      const da = Dd[a], db = Dd[bq];
-      if (mustD.length && !mustD.every(m => m === da || m === db)) continue;
-      const c = M.P[g].price + M.P[da].price + M.P[db].price; if (c > B) continue;
-      const tc = {}; for (const i of [g, da, db]) tc[M.P[i].club] = (tc[M.P[i].club] || 0) + 1;
-      if (Math.max(...Object.values(tc)) > cap) continue;
-      const v = val[g] + val[da] + val[db], ub = v + V[0][ix(B - c, 0, 0)]; if (ub < NEG / 2) continue;
-      combos.push({ ids: [g, da, db], c, v, ub, tc });
+    for (const g of (mustG.length ? mustG : prune(G, 1))) for (const { ds, nf } of dSets) {
+      const pl = [g, ...ds]; let c = 0, v = 0; const tc = {};
+      for (const i of pl) { c += M.P[i].price; v += val[i]; tc[M.P[i].club] = (tc[M.P[i].club] || 0) + 1; }
+      if (c > B || Math.max(...Object.values(tc)) > cap) continue;
+      const os = opts(nf).map(([oc, ow]) => ({ oc, ow, u: V[0][ix(B - c, oc, ow)] })).filter(o => o.u > NEG / 2).sort((a, b) => b.u - a.u);
+      if (os.length) combos.push({ ids: pl, c, v, ub: v + os[0].u, tc, os });
     }
     combos.sort((x, y) => y.ub - x.ub);
     const best = []; let kth = -Infinity; const seen = new Set(); let nodes = 0; const LIM = 3e6; const chosen = [];
     function add(v, ids) { const key = ids.slice().sort((x, y) => x - y).join(","); if (seen.has(key)) return; seen.add(key);
       best.push({ val: v, ids }); best.sort((x, y) => y.val - x.val); if (best.length > K) best.pop(); if (best.length === K) kth = best[K - 1].val; }
-    function dfs(k, b, c, w, acc, tc, base) {
+    function dfs(k, b, c, w, acc, tc, base) {                 // c, w = vielä valittavat KH ja LH
       if (++nodes > LIM) return;
       const ub = V[k][ix(b, c, w)]; if (ub < NEG / 2 || acc + ub + 1e-6 <= kth) return;
       if (k === n) { add(acc, base.concat(chosen)); return; }
       const i = Fs[k], p = M.P[i], isC = p.pos === "C";
-      if (p.price <= b && (isC ? c < nC : w < nW) && (tc[p.club] || 0) < cap) {
+      if (p.price <= b && (isC ? c > 0 : w > 0) && (tc[p.club] || 0) < cap) {
         chosen.push(i); tc[p.club] = (tc[p.club] || 0) + 1;
-        dfs(k + 1, b - p.price, isC ? c + 1 : c, isC ? w : w + 1, acc + val[i], tc, base);
+        dfs(k + 1, b - p.price, isC ? c - 1 : c, isC ? w : w - 1, acc + val[i], tc, base);
         tc[p.club]--; chosen.pop();
       }
       if (!must.has(i)) dfs(k + 1, b, c, w, acc, tc, base);
     }
-    for (const cb of combos) { if (cb.ub + 1e-6 <= kth || nodes > LIM) break; dfs(0, B - cb.c, 0, 0, cb.v, { ...cb.tc }, cb.ids); }
+    for (const cb of combos) { if (cb.ub + 1e-6 <= kth || nodes > LIM) break;
+      for (const o of cb.os) { if (cb.v + o.u + 1e-6 <= kth) break; dfs(0, B - cb.c, o.oc, o.ow, cb.v, { ...cb.tc }, cb.ids); } }
     return { sols: best, exact: nodes <= LIM };
   }
 
@@ -410,12 +435,11 @@ main > .notice{margin-bottom:14px}
   }
 
   function squadOk(M, sq) {
-    const R = M.R.slots; let g = 0, dd = 0, c = 0, w = 0, cost = 0; const tc = {};
+    let g = 0, dd = 0, c = 0, w = 0, cost = 0; const tc = {};
     for (const i of sq) { const p = M.P[i]; cost += p.price; tc[p.club] = (tc[p.club] || 0) + 1;
       if (p.pos === "G") g++; else if (p.pos === "D") dd++; else if (p.pos === "C") c++; else w++; }
     if (new Set(sq).size !== sq.length) return false;
-    return g === R.G && dd === R.D && c + w === R.F && c >= R.C[0] && c <= R.C[1] && w >= R.W[0] && w <= R.W[1] &&
-      cost <= M.B && Math.max(...Object.values(tc)) <= M.cap;
+    return countsOk(M.Q, g, dd, c, w) && cost <= M.B && Math.max(...Object.values(tc)) <= M.cap;
   }
 
   // ---------- säde-haku (beam search) ----------
@@ -425,16 +449,19 @@ main > .notice{margin-bottom:14px}
     const D = M.D, bankMax = M.R.bank_max ?? 32;
     const wcDay = cfg.wcDay; // undefined = ei villiä korttia, "auto" = mikä tahansa päivä, numero = tietty päivä
     // järjestetyt ehdokaslistat päivittäin pelipaikoittain
-    const groups = { G: [], D: [], F: [] };
-    M.P.forEach((p, i) => groups[p.pos === "G" ? "G" : p.pos === "D" ? "D" : "F"].push(i));
+    // ryhmät: maalivahdit ja kenttäpelaajat (puolustaja voi vaihtua hyökkääjäksi, kun 2-3 P / 5-6 H sallii)
+    const groups = { G: [], S: [] };
+    M.P.forEach((p, i) => groups[p.pos === "G" ? "G" : "S"].push(i));
     const order = [];
     for (let d = 0; d < D; d++) {
       const o = {};
-      for (const k in groups) o[k] = groups[k].filter(i => S[d][i] > 0).sort((a, b) => S[d][b] - S[d][a]).slice(0, 60);
+      const top = (L, m) => L.filter(i => S[d][i] > 0).sort((a, b) => S[d][b] - S[d][a]).slice(0, m);
+      o.G = top(groups.G, 60);                               // kenttäpelaajat: 60 parasta puolustajaa ja 60 hyökkääjää yhdessä listassa
+      o.S = [...top(groups.S.filter(i => M.P[i].pos === "D"), 60), ...top(groups.S.filter(i => M.P[i].pos !== "D"), 60)].sort((a, b) => S[d][b] - S[d][a]);
       order.push(o);
     }
-    const grp = p => (p.pos === "G" ? "G" : p.pos === "D" ? "D" : "F");
-    const R = M.R.slots;
+    const grp = p => (p.pos === "G" ? "G" : "S");
+    const Q = M.Q, cntOk = (dd, c, w) => countsOk(Q, Q.G[0], dd, c, w);
     const wcSq = {};
     function wcSquad(d) { if (!(d in wcSq)) { const r = bestSquads(M, S[d], 1, keep); wcSq[d] = r.sols.length ? r.sols[0].ids : null; } return wcSq[d]; }
 
@@ -466,8 +493,8 @@ main > .notice{margin-bottom:14px}
         const maxK = Math.min(st.f, st.T);
         if (maxK > 0) {
           // laskurit
-          let cost = 0; const tc = {}; let nc = 0, nw = 0;
-          for (const i of st.sq) { const p = M.P[i]; cost += p.price; tc[p.club] = (tc[p.club] || 0) + 1; if (p.pos === "C") nc++; if (p.pos === "W") nw++; }
+          let cost = 0; const tc = {}; let nc = 0, nw = 0, nd = 0;
+          for (const i of st.sq) { const p = M.P[i]; cost += p.price; tc[p.club] = (tc[p.club] || 0) + 1; if (p.pos === "C") nc++; if (p.pos === "W") nw++; if (p.pos === "D") nd++; }
           const inSq = new Set(st.sq);
           const singles = [];
           for (const out of st.sq) {
@@ -480,16 +507,14 @@ main > .notice{margin-bottom:14px}
               const pj = M.P[j];
               if (cost - po.price + pj.price > M.B) continue;
               if ((tc[pj.club] || 0) - (pj.club === po.club ? 1 : 0) + 1 > M.cap) continue;
-              if (g === "F") { const c2 = nc - (po.pos === "C") + (pj.pos === "C"), w2 = nw - (po.pos === "W") + (pj.pos === "W");
-                if (c2 < R.C[0] || c2 > R.C[1] || w2 < R.W[0] || w2 > R.W[1]) continue; }
+              if (g === "S" && !cntOk(nd - (po.pos === "D") + (pj.pos === "D"), nc - (po.pos === "C") + (pj.pos === "C"), nw - (po.pos === "W") + (pj.pos === "W"))) continue;
               singles.push({ out, inn: j, gain: Sd[j] - so });
               if (++found >= cfg.M) break;
             }
           }
           singles.sort((a, b) => b.gain - a.gain);
           for (const s of singles) push(st, st.sq.map(i => (i === s.out ? s.inn : i)), 1, false, [[s.out, s.inn]]);
-          const isC = i => M.P[i].pos === "C", isW = i => M.P[i].pos === "W";
-          const fOk = (c2, w2) => c2 >= R.C[0] && c2 <= R.C[1] && w2 >= R.W[0] && w2 <= R.W[1];
+          const isC = i => M.P[i].pos === "C", isW = i => M.P[i].pos === "W", isD = i => M.P[i].pos === "D";
           if (maxK >= 2) {
             // kahden vaihdon yhdistelmät: myös budjettia vapauttavat parit (halvempi + kalliimpi)
             const outs = st.sq.filter(i => !keep.has(i)).sort((a, b) => Sd[a] - Sd[b]).slice(0, cfg.pairOuts);
@@ -497,7 +522,7 @@ main > .notice{margin-bottom:14px}
               const o1 = outs[a], o2 = outs[b], p1 = M.P[o1], p2 = M.P[o2];
               const L1 = ord[grp(p1)], L2 = ord[grp(p2)], n1 = Math.min(L1.length, cfg.pairCand), n2 = Math.min(L2.length, cfg.pairCand);
               const baseCost = cost - p1.price - p2.price, base = Sd[o1] + Sd[o2];
-              const nc0 = nc - isC(o1) - isC(o2), nw0 = nw - isW(o1) - isW(o2);
+              const nc0 = nc - isC(o1) - isC(o2), nw0 = nw - isW(o1) - isW(o2), nd0 = nd - isD(o1) - isD(o2);
               const tcAdj = c => (tc[c] || 0) - (p1.club === c) - (p2.club === c);
               let bestv = 1e-9, bp = null;
               for (let x = 0; x < n1; x++) { const j1 = L1[x]; if (inSq.has(j1)) continue; const q1 = M.P[j1];
@@ -507,7 +532,7 @@ main > .notice{margin-bottom:14px}
                   const v = Sd[j1] + Sd[j2] - base; if (v <= bestv) break;
                   if (baseCost + q1.price + q2.price > M.B) continue;
                   if (tcAdj(q2.club) + 1 + (q1.club === q2.club) > M.cap) continue;
-                  if (grp(p1) === "F" || grp(p2) === "F") { if (!fOk(nc0 + isC(j1) + isC(j2), nw0 + isW(j1) + isW(j2))) continue; }
+                  if (!cntOk(nd0 + isD(j1) + isD(j2), nc0 + isC(j1) + isC(j2), nw0 + isW(j1) + isW(j2))) continue;
                   bestv = v; bp = [j1, j2];
                 } }
               if (bp) push(st, st.sq.map(i => (i === o1 ? bp[0] : i === o2 ? bp[1] : i)), 2, false, [[o1, bp[0]], [o2, bp[1]]]);
@@ -516,19 +541,19 @@ main > .notice{margin-bottom:14px}
           if (maxK >= 3 && singles.length) {
             // ahne kolmen vaihdon ketju
             const outs = st.sq.filter(i => !keep.has(i)).sort((a, b) => Sd[a] - Sd[b]).slice(0, 4);
-            let cur = st.sq.slice(), acts = [], cc = cost, cnc = nc, cnw = nw; const ctc = { ...tc }; const used = new Set(cur);
+            let cur = st.sq.slice(), acts = [], cc = cost, cnc = nc, cnw = nw, cnd = nd; const ctc = { ...tc }; const used = new Set(cur);
             for (let step = 0; step < 3; step++) {
               let bestv = 1e-9, bp = null;
               for (const o of outs) { if (!used.has(o)) continue; const po = M.P[o], g = grp(po);
-                for (const j of ord[g].slice(0, g === "G" ? 8 : g === "D" ? 15 : 25)) { if (used.has(j)) continue; const v = Sd[j] - Sd[o]; if (v <= bestv) break;
+                for (const j of ord[g].slice(0, g === "G" ? 8 : 40)) { if (used.has(j)) continue; const v = Sd[j] - Sd[o]; if (v <= bestv) break;
                   const pj = M.P[j];
                   if (cc - po.price + pj.price > M.B) continue;
                   if ((ctc[pj.club] || 0) - (pj.club === po.club) + 1 > M.cap) continue;
-                  if (g === "F" && !fOk(cnc - isC(o) + isC(j), cnw - isW(o) + isW(j))) continue;
+                  if (g === "S" && !cntOk(cnd - isD(o) + isD(j), cnc - isC(o) + isC(j), cnw - isW(o) + isW(j))) continue;
                   bestv = v; bp = [o, j]; } }
               if (!bp) break;
               const [o, j] = bp, po = M.P[o], pj = M.P[j];
-              cc += pj.price - po.price; ctc[po.club]--; ctc[pj.club] = (ctc[pj.club] || 0) + 1; cnc += isC(j) - isC(o); cnw += isW(j) - isW(o);
+              cc += pj.price - po.price; ctc[po.club]--; ctc[pj.club] = (ctc[pj.club] || 0) + 1; cnc += isC(j) - isC(o); cnw += isW(j) - isW(o); cnd += isD(j) - isD(o);
               used.delete(o); used.add(j); cur = cur.map(i => (i === o ? j : i)); acts.push([o, j]);
             }
             if (acts.length === 3) push(st, cur, 3, false, acts);
@@ -552,7 +577,7 @@ main > .notice{margin-bottom:14px}
 
   // ---------- paikallishaku valmiin suunnitelman päälle ----------
   // squads[d] (d = from..D-1): kunkin kierroksen joukkue (indeksit). ctx: {from, fresh, sq0, bank0, T, wcDay}
-  const grpOf = p => (p.pos === "G" ? "G" : p.pos === "D" ? "D" : "F");
+  const grpOf = p => (p.pos === "G" ? "G" : "S");
   function alignSlots(M, squads, ctx) {
     // pelaaja pysyy samassa "paikassa"; uusi pelaaja korvaa saman ryhmän lähtevän
     const { from } = ctx, D = M.D, slots = {};
@@ -576,7 +601,7 @@ main > .notice{margin-bottom:14px}
     return out;
   }
   function orderLike(M, sq, prevSlots) {             // villi kortti: järjestetään ryhmittäin samoihin paikkoihin
-    const by = { G: [], D: [], F: [] }; for (const p of sq) by[grpOf(M.P[p])].push(p);
+    const by = { G: [], S: [] }; for (const p of sq) by[grpOf(M.P[p])].push(p);
     return prevSlots.map(p => by[grpOf(M.P[p])].shift());
   }
   function transfersOk(M, slots, ctx) {
@@ -595,10 +620,10 @@ main > .notice{margin-bottom:14px}
     return true;
   }
   function dayOk(M, sq) {
-    let cost = 0, c = 0, w = 0; const tc = {};
-    const R = M.R.slots;
-    for (const i of sq) { const p = M.P[i]; cost += p.price; if ((tc[p.club] = (tc[p.club] || 0) + 1) > M.cap) return false; if (p.pos === "C") c++; else if (p.pos === "W") w++; }
-    if (cost > M.B || c < R.C[0] || c > R.C[1] || w < R.W[0] || w > R.W[1]) return false;
+    let cost = 0, c = 0, w = 0, g = 0, dd = 0; const tc = {};
+    for (const i of sq) { const p = M.P[i]; cost += p.price; if ((tc[p.club] = (tc[p.club] || 0) + 1) > M.cap) return false;
+      if (p.pos === "C") c++; else if (p.pos === "W") w++; else if (p.pos === "D") dd++; else g++; }
+    if (cost > M.B || !countsOk(M.Q, g, dd, c, w)) return false;
     return new Set(sq).size === sq.length;
   }
   function improve(M, squads, ctx, maxIter) {
@@ -607,7 +632,7 @@ main > .notice{margin-bottom:14px}
     if (!slots) return null;
     const pre = M.P.map(p => { const a = new Float64Array(D + 1); for (let d = 0; d < D; d++) a[d + 1] = a[d] + p.x[d]; return a; });
     const sum = (i, a, b) => pre[i][b + 1] - pre[i][a];
-    const groups = { G: [], D: [], F: [] };
+    const groups = { G: [], S: [] };
     M.P.forEach((p, i) => { if (!ctx.excl || !ctx.excl.has(i)) groups[grpOf(p)].push(i); });
     const keep = ctx.keep || new Set();
     const total = () => { let t = 0; for (let d = from; d < D; d++) for (const i of slots[d]) t += M.P[i].x[d]; return t; };
@@ -864,7 +889,7 @@ function useDataset(ds){
   const upd=ds.updated.replace("T"," klo ");
   const R=ds.rules;
   $("#dataStamp").textContent=`Ennusteet ${dlab(ds.days[0][0])}–${dlab(ds.days[D-1][0])} (${D} kierrosta jäljellä datassa). Mallin ajo ${upd}. ${S.P.length} pelaajaa.`;
-  $("#rulesList").innerHTML=[`Budjetti ${R.budget} M, joukkueessa 1 MV, 2 P ja 6 H (2–3 KH, 3–4 LH)`,`Samasta joukkueesta enintään ${R.max_per_team} pelaajaa`,
+  $("#rulesList").innerHTML=[`Budjetti ${R.budget} M, joukkueessa 1 MV, ${Array.isArray(R.slots.D)?R.slots.D.join("–"):R.slots.D} P ja ${Array.isArray(R.slots.F)?R.slots.F.join("–"):R.slots.F} H, yhteensä ${R.size||9} (hyökkääjistä 2–3 KH, 3–4 LH)`,`Samasta joukkueesta enintään ${R.max_per_team} pelaajaa`,
     `Kierros = NHL:n pelipäivä, vaihdot ennen päivän ensimmäistä ottelua`,`${R.free_per_round} ilmainen vaihto / kierros, säästyy (enint. ${R.bank_max}); yhteensä enintään ${R.transfers_total} vaihtoa`,
     `Villi kortti (${R.wildcards} kpl): rajattomat vaihdot yhdellä kierroksella, nollaa säästetyt vaihdot`,`Jakso ${dlab(R.start)}–${dlab(R.end)} (NHL:n päivämäärät)`].map(t=>`<li>${esc(t)}</li>`).join("");
   try{const today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York"}).format(new Date());const el=$("#staleNote");
@@ -894,9 +919,10 @@ function saveLocks(){store("locks",{k:[...S.keep],e:[...S.excl]})}
 function preTournament(){return S.cur===0&&S.my.pre!==false}
 function squadCheck(ids){const R=S.ds.rules,s=R.slots;const ps=ids.map(id=>S.byId[id]).filter(Boolean);
   const c={G:0,D:0,C:0,W:0},tc={};let cost=0;for(const p of ps){c[p.pos]++;tc[p.club]=(tc[p.club]||0)+1;cost+=p.price}
-  const errs=[];if(ps.length!==9)errs.push(`${ps.length}/9 pelaajaa`);
-  if(c.G!==s.G)errs.push(`MV ${c.G}/${s.G}`);if(c.D!==s.D)errs.push(`P ${c.D}/${s.D}`);
-  if(c.C+c.W!==s.F||c.C<s.C[0]||c.C>s.C[1]||c.W<s.W[0]||c.W>s.W[1])errs.push(`H ${c.C} KH + ${c.W} LH (pitää olla 6: 2–3 KH, 3–4 LH)`);
+  const rg=v=>Array.isArray(v)?v:[v,v],N=R.size||9,sF=s.F!==undefined?rg(s.F):[6,6],sD=rg(s.D),txt=([a,b])=>a===b?`${a}`:`${a}–${b}`;
+  const errs=[];if(ps.length!==N)errs.push(`${ps.length}/${N} pelaajaa`);
+  if(c.G<rg(s.G)[0]||c.G>rg(s.G)[1])errs.push(`MV ${c.G}/${txt(rg(s.G))}`);if(c.D<sD[0]||c.D>sD[1])errs.push(`P ${c.D} (pitää olla ${txt(sD)})`);
+  const f=c.C+c.W;if(f<sF[0]||f>sF[1]||c.C<s.C[0]||c.C>s.C[1]||c.W<s.W[0]||c.W>s.W[1])errs.push(`H ${c.C} KH + ${c.W} LH (pitää olla ${txt(sF)}: 2–3 KH, 3–4 LH)`);
   if(cost>R.budget+1e-9)errs.push(`hinta ${f1(cost)} > ${R.budget}`);
   const over=Object.entries(tc).filter(([,n])=>n>R.max_per_team).map(([k])=>k);if(over.length)errs.push(`yli ${R.max_per_team} pelaajaa: ${over.join(", ")}`);
   return {ok:!errs.length,errs,cost,ps}}
@@ -945,7 +971,7 @@ function computeAlts(tok){
   const st=planState();if(st.fresh||!S.plan){$("#alts").innerHTML='<span class="muted">Vaihtoehdot näytetään, kun oma joukkue on syötetty (Oma joukkue).</span>';$("#altInfo").textContent="";return}
   const E=S.ds.exact;
   if(S.plan.src==="exact"&&E&&E.alts){            // tarkat vaihtoehdot koneelta
-    const grp=p=>p.pos==="G"?"G":p.pos==="D"?"D":"F";const my=S.my.squad;const toIdx=id=>S.M.byId.get(id);
+    const grp=p=>p.pos==="G"?"G":"S";const my=S.my.squad;const toIdx=id=>S.M.byId.get(id);
     const actOf=sq0=>{const a=new Set(sq0),b=new Set(my);const outs=my.filter(id=>!a.has(id)),ins=sq0.filter(id=>!b.has(id));if(!outs.length)return null;
       return outs.map(o=>{const k=ins.findIndex(i=>grp(S.byId[i])===grp(S.byId[o]));const i=ins.splice(k,1)[0];return [toIdx(o),toIdx(i)]})};
     const f0=S.plan.steps[0];
