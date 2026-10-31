@@ -470,7 +470,7 @@ function roleText(p){if(p.pos==="G")return p.av!=null?`aloittaa ${pct(p.av)}`:""
 function formation(ps){const C=ps.filter(p=>p.pos==="C").sort((a,b)=>b.x-a.x),W=ps.filter(p=>p.pos==="W").sort((a,b)=>b.x-a.x),rows=[];
   while(C.length||W.length){const mid=C.shift()||W.shift();const l=W.shift()||C.shift(),r=W.shift()||C.shift();rows.push([l,mid,r].filter(Boolean))}
   rows.push(ps.filter(p=>p.pos==="D"));rows.push(ps.filter(p=>p.pos==="G"));return rows}
-function tokenHTML(p,isNew){const warn=p.pos!=="G"&&p.av<0.9?'<span class="flag">epävarma</span>':"";const lk=S.locks.has(p.id)?'<span class="lock">lukittu</span>':(isNew?'<span class="lock">vaihto</span>':"");
+function tokenHTML(p,isNew,lab){const warn=p.pos!=="G"&&p.av<0.9?'<span class="flag">epävarma</span>':"";const lk=S.locks.has(p.id)?'<span class="lock">lukittu</span>':(isNew?`<span class="lock">${lab||"vaihto"}</span>`:"");
   return `<button class="tok${p.pos==="G"?" g":""}${isNew?" new":""}" data-pid="${p.id}" aria-label="${esc(p.name)}, ${f1(p.x)} xPTS">${warn}${lk}
   <div class="top"><span class="ps">${POSFI[p.pos]}</span><span>${esc(p.club)}</span></div><span class="nm">${esc(p.ln)}</span>
   <span class="op">${esc(p.opp)}</span><span class="op">${esc(roleText(p))||"&nbsp;"}</span>
@@ -515,7 +515,7 @@ function renderWin(){const W=S.win,w=W.win,o=W.opt,optIds=new Set(o.players);
   const ps=w.players.map(id=>S.byId[id]);
   $("#luTitle").textContent="Voittokokoonpano";
   const rows=formation(ps);
-  $("#rink").innerHTML=`<div class="rink" style="--rows:${rows.length}">${RINK}${rows.map(rw=>`<div class="rrow">${rw.map(p=>tokenHTML(p,!optIds.has(p.id))).join("")}</div>`).join("")}</div>`;
+  $("#rink").innerHTML=`<div class="rink" style="--rows:${rows.length}">${RINK}${rows.map(rw=>`<div class="rrow">${rw.map(p=>tokenHTML(p,!optIds.has(p.id),"ero")).join("")}</div>`).join("")}</div>`;
   const price=ps.reduce((s,p)=>s+p.price,0);
   $("#sum").innerHTML=`<div class="stat"><div class="k">Voittajan tasolle</div><div class="v">${(w.p_win*100).toFixed(1)} %</div></div>
     <div class="stat"><div class="k">Palkkarajalle</div><div class="v">${pct(w.p_cash)}</div></div>
@@ -527,7 +527,7 @@ function renderWin(){const W=S.win,w=W.win,o=W.opt,optIds=new Set(o.players);
   $("#teamsBox").hidden=false;
   $("#teamsBox").innerHTML=`<div class="row" style="justify-content:space-between"><h3>Verrattuna parhaaseen odotukseen</h3><span class="muted">${Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>esc(t)+" "+n).join(" · ")}</span></div>
    <div class="tw"><table><thead><tr><th class="l"></th><th>Odotus</th><th>Paras 10 %</th><th>Voittajan tasolle</th><th>Palkkarajalle</th></tr></thead><tbody>${row("Voittokokoonpano",w,true)}${row("Paras odotus",o)}</tbody></table></div>
-   <p class="muted" style="margin:0">Paras 10 % = pisteet, jotka ylittyvät joka kymmenentenä iltana. Voittajan taso noin ${f1(W.target)} pistettä. Merkintä vaihto = ei parhaan odotuksen kokoonpanossa.</p>`;
+   <p class="muted" style="margin:0">Paras 10 % = pisteet, jotka ylittyvät joka kymmenentenä iltana. Voittajan taso noin ${f1(W.target)} pistettä. Merkintä ero = pelaaja ei ole parhaan odotuksen kokoonpanossa.</p>`;
   $("#alts").innerHTML="";
   $("#solveNote").textContent=`Laskettu mallin ajossa ${upd} budjetilla ${W.budget}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}: ilta simuloitu 10 000 kertaa, ja valittu kokoonpano yltää useimmin kisan voittajan tasolle (${String(W.contest).replace(".",",")} € kisa). Sivun budjetti, lukitukset ja poistot eivät muuta tätä kokoonpanoa.`;
 }
