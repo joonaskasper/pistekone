@@ -250,7 +250,7 @@ td.cell.has{background:var(--accent-soft)}
         <div class="panel stack"><h3>Pistekomponentit</h3><p class="muted" style="margin:0">Keskimäärin pelaajaa kohden (pisteinä).</p><div class="tw"><table id="trackComp"></table></div></div>
         <div class="panel stack"><h3>Maalivahdit</h3><div id="trackGoal"></div></div>
       </div>
-      <div class="panel stack"><h3>Mallin paras kokoonpano</h3><p class="muted" style="margin:0">Optimoijan kokoonpano illan budjetilla. Palkkarajat kirjataan komennolla <span class="mono">track.py cutline</span>.</p><div class="tw"><table id="trackLineups"></table></div></div>
+      <div class="panel stack"><h3>Mallin kokoonpanot</h3><p class="muted" style="margin:0">Paras odotus (O) ja voittokokoonpano (V) illan budjetilla; vie hiiri rivin päälle nähdäksesi pelaajat. Palkkarajat kirjataan komennolla <span class="mono">track.py cutline</span>.</p><div class="tw"><table id="trackLineups"></table></div></div>
       <div class="panel stack"><h3>Illoittain</h3><div class="tw"><table id="trackDaily"></table></div></div>
       <p class="muted" style="margin:0" id="trackStamp"></p>
     </div>
@@ -622,9 +622,12 @@ function renderTrack(){const t=S.track;$("#trackEmpty").hidden=!!t;$("#trackBody
     ${g.n?`<dt>Aloittaneet: ennuste (jos aloittaa)</dt><dd>${f2(g.exp)}</dd><dt>Aloittaneet: toteuma</dt><dd>${f2(g.act)}</dd><dt>Ero</dt><dd>${g.diff>0?"+":""}${f2(g.diff)} ±${f2(g.ci)}</dd>`:""}
     ${(g.comps||[]).map(c=>`<dt>${esc(c.lab)}</dt><dd>${f2(c.exp)} / ${f2(c.act)}</dd>`).join("")}</dl>
     <p class="muted" style="margin:6px 0 0">${t.play?`Kenttäpelaajien pelaaminen: ennustettu ${pct(t.play.pred)}, toteutui ${pct(t.play.act)}.`:""}</p>`:'<span class="muted">Ei maalivahtidataa.</span>';
-  $("#trackLineups").innerHTML=`<thead><tr><th class="l">Ilta</th><th>Ennuste</th><th>Toteuma</th><th class="l">Palkkarajat</th></tr></thead><tbody>${(t.lineups||[]).slice().reverse().map(r=>{
-    const cuts=(r.cuts||[]).map(c=>`${esc(c.contest)} €: ${f1(c.cutline)} ${r.act!=null?(r.act>=c.cutline?'<span class="pill good">palkoilla</span>':'<span class="pill">ei</span>'):""}`).join("<br>");
-    return `<tr title="${esc((r.players||[]).join(", "))}"><td class="l">${esc(r.date)}${r.slate?` <span class="muted">${r.slate==="yo"?"yö":esc(r.slate)}</span>`:""}</td><td class="num">${f1(r.exp)}</td><td class="num">${r.act!=null?f1(r.act):"–"}</td><td class="l">${cuts||'<span class="muted">–</span>'}</td></tr>`}).join("")}</tbody>`;
+  const pill=(v,c,lab)=>v==null?"":`<span class="pill${v>=c?" good":""}">${lab} ${v>=c?"palkoilla":"ei"}</span>`;
+  $("#trackLineups").innerHTML=`<thead><tr><th class="l">Ilta</th><th>Paras odotus</th><th>Toteuma</th><th>Voittokokoonpano</th><th>Toteuma</th><th class="l">Palkkaraja / voittaja</th></tr></thead><tbody>${(t.lineups||[]).slice().reverse().map(r=>{
+    const w=r.win||null;
+    const cuts=(r.cuts||[]).map(c=>`${esc(c.contest)} €: ${f1(c.cutline)}${c.winner!=null?" / "+f1(c.winner):""} ${pill(r.act,c.cutline,"O")}${w?" "+pill(w.act,c.cutline,"V"):""}`).join("<br>");
+    const title=`Paras odotus: ${(r.players||[]).join(", ")}${w?"\nVoittokokoonpano: "+(w.players||[]).join(", "):""}`;
+    return `<tr title="${esc(title)}"><td class="l">${esc(r.date)}${r.slate?` <span class="muted">${r.slate==="yo"?"yö":esc(r.slate)}</span>`:""}</td><td class="num">${f1(r.exp)}</td><td class="num">${r.act!=null?f1(r.act):"–"}</td><td class="num">${w?f1(w.exp):"–"}</td><td class="num">${w&&w.act!=null?f1(w.act):"–"}</td><td class="l">${cuts||'<span class="muted">–</span>'}</td></tr>`}).join("")}</tbody>`;
   rowsTable("#trackDaily",(t.daily||[]).slice().reverse(),"Ilta");
   $("#trackStamp").textContent=`Seuranta ${t.first} – ${t.last}, päivitetty ${String(t.updated).replace("T"," klo ")}. Palkkarajoja kirjattu: ${t.cutlines||0}.`}
 
