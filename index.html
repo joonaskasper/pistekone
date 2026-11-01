@@ -365,6 +365,10 @@ function useDataset(ds){
   S.byId=Object.fromEntries(S.P.map(p=>[p.id,p]));
   const W=ds.win;S.win=W&&W.date===ds.date&&W.win&&W.win.players.every(id=>S.byId[id])?W:null;
   S.mode=S.win&&load("mode","opt")==="win"?"win":"opt";
+  // uusi illan data: budjetti ja joukkueraja mallin ajosta (sen jälkeen omat muutokset pysyvät tähän dataan asti)
+  const bud=ds.budget??(ds.win&&ds.win.budget),mpt=ds.max_per_team!==undefined?ds.max_per_team:(ds.win?ds.win.max_per_team:undefined);
+  if(bud&&ds.updated!==load("rulesFor",null)){$("#budget").value=bud;const mt=String(mpt||0);
+    if([...$("#maxTeam").options].some(o=>o.value===mt))$("#maxTeam").value=mt;store("rulesFor",ds.updated)}
   S.games=(ds.games||[]).map(r=>{const o={};ds.gfields.forEach((k,i)=>o[k]=r[i]);return o});
   const key="sel:"+ds.date;const sel=load(key,{l:[],e:[]});
   S.locks=new Set(sel.l.filter(id=>S.byId[id]));S.excl=new Set(sel.e.filter(id=>S.byId[id]));
@@ -688,7 +692,7 @@ $("#csvFiles").addEventListener("change",async e=>{const files=[...e.target.file
       if(S.db&&S.isOwner){try{await S.db.doc("datasets/latest").set(ds)}catch(err){}}else{try{localStorage.setItem("pk:ds",JSON.stringify(ds))}catch(err){}}
       msg.textContent="Voittokokoonpano lisätty.";toast("Voittokokoonpano lisätty");return}
     if(!pg){msg.textContent=tr?"Seuranta päivitetty.":"Tiedostoa expected_points_per_game.csv ei löytynyt valinnasta. Valitse se kansiosta output_daily.";if(tr)toast("Seuranta päivitetty");return}
-    const ds=buildDataset(pg,gm);if(wn&&wn.date===ds.date)ds.win=wn;useDataset(ds);
+    const ds=buildDataset(pg,gm);if(wn&&wn.date===ds.date){ds.win=wn;ds.budget=wn.budget;ds.max_per_team=wn.max_per_team}useDataset(ds);
     msg.textContent=`Ladattu: ${ds.players.length} pelaajaa${gm?`, ${ds.games.length} ottelua`:" (otteluita ei valittu, Ottelut-välilehti jää tyhjäksi)"}.`;
     if(S.db&&S.isOwner){try{await S.db.doc("datasets/latest").set(ds);msg.textContent+=" Tallennettu: näkyy myös muilla laitteillasi."}catch(err){msg.textContent+=" Tallennus ei onnistunut ("+(err&&err.code||"virhe")+"); data on käytössä vain tällä kertaa."}}
     else{msg.textContent+=" Data on käytössä tässä selaimessa.";try{localStorage.setItem("pk:ds",JSON.stringify(ds))}catch(err){}}
