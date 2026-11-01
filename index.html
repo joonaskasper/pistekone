@@ -257,6 +257,9 @@ td.cell.has{background:var(--accent-soft)}
         <div class="row" style="justify-content:space-between;align-items:flex-end"><h3>Pelaajat</h3><div class="ctrl"><label for="ownSel">Ilta ja kisa</label><select id="ownSel"></select></div></div>
         <div class="grid2"><div class="stack"><b>Suosituimmat</b><div class="tw"><table id="ownTop"></table></div></div>
           <div class="stack"><b>Vähän valitut onnistujat (omistus alle 5 %)</b><div class="tw"><table id="ownSleep"></table></div></div></div>
+        <div class="row" style="justify-content:space-between;align-items:flex-end"><h3>Pelaajien keskimääräinen omistus</h3><div class="ctrl"><label for="ownQ">Haku</label><input id="ownQ" type="search" placeholder="Nimi tai joukkue"></div></div>
+        <p class="muted" style="margin:0">Keskiarvo illoista, joina pelaaja oli kisan pelaajalistalla. Kisojen sarakkeet voivat sisältää eri iltoja (5,75 € listoja on vähemmän). xPTS ja pisteet samojen iltojen keskiarvoja. Järjestä klikkaamalla otsikkoa.</p>
+        <div class="tw" style="max-height:60vh"><table id="ownPlayers"></table></div>
       </div>
       <div class="panel stack"><h3>Illoittain</h3><div class="tw"><table id="trackDaily"></table></div></div>
       <p class="muted" style="margin:0" id="trackStamp"></p>
@@ -528,7 +531,20 @@ function renderOwn(t){const rows=(t.ownership||[]).slice().reverse();$("#ownPane
   const sel=$("#ownSel"),cur=sel.value;sel.innerHTML=rows.map((r,i)=>`<option value="${i}">${esc(lab(r))}</option>`).join("");if(cur&&+cur<rows.length)sel.value=cur;
   const show=()=>{const r=rows[+sel.value||0];const tb=L=>`<thead><tr><th class="l">Pelaaja</th><th>Omistus</th><th>xPTS</th><th>Pisteet</th></tr></thead><tbody>${(L||[]).map(x=>`<tr><td class="l">${esc(x.name)}</td><td class="num">${f1(x.own)} %</td><td class="num">${f1(x.xp)}</td><td class="num">${f1(x.res)}</td></tr>`).join("")}</tbody>`;
     $("#ownTop").innerHTML=tb(r.top);$("#ownSleep").innerHTML=tb(r.sleepers)};
-  sel.onchange=show;show()}
+  sel.onchange=show;show();renderOwnPlayers()}
+function renderOwnPlayers(){const t=S.track;const all=(t&&t.own_players)||[];const q=($("#ownQ").value||"").toLowerCase();
+  const sk=S.sortO||(S.sortO={k:"own_a",d:-1});
+  let rows=all.filter(r=>!q||r.name.toLowerCase().includes(q)||String(r.team).toLowerCase().includes(q));
+  rows=rows.slice().sort((a,b)=>{const x=a[sk.k],y=b[sk.k];if(typeof x==="string"||typeof y==="string")return String(x??"").localeCompare(String(y??""))*sk.d;return((x??-1e9)-(y??-1e9))*sk.d});
+  const P={goalkeeper:"MV",defender:"P",center:"KH",winger:"LH"};
+  const cols=[["name","Pelaaja","l"],["team","Jouk.","l"],["pos","Pp","l"],["price","Hinta"],["nights","Iltoja"],["own_a","0,23 € omistus"],["own_b","5,75 € omistus"],["xp","xPTS"],["res","Pisteet"]];
+  $("#ownPlayers").innerHTML="<thead><tr>"+cols.map(([k,l,c])=>`<th class="${c||""}" data-osort="${k}" aria-sort="${sk.k===k?(sk.d>0?"ascending":"descending"):"none"}">${l}${sk.k===k?(sk.d>0?" ▲":" ▼"):""}</th>`).join("")+"</tr></thead><tbody>"+
+    rows.slice(0,150).map(r=>`<tr><td class="l">${esc(r.name)}</td><td class="l">${esc(r.team)}</td><td class="l"><span class="ps2">${P[r.pos]||""}</span></td><td class="num">${f1(r.price)}</td><td class="num">${r.nights}</td>
+      <td class="num">${r.own_a!=null?f1(r.own_a)+" %"+(r.n_a>1?` <span class="muted">(${r.n_a})</span>`:""):"–"}</td><td class="num">${r.own_b!=null?f1(r.own_b)+" %"+(r.n_b>1?` <span class="muted">(${r.n_b})</span>`:""):"–"}</td>
+      <td class="num">${f1(r.xp)}</td><td class="num">${f1(r.res)}</td></tr>`).join("")+"</tbody>"}
+$("#ownQ").addEventListener("input",renderOwnPlayers);
+document.addEventListener("click",e=>{const h=e.target.closest("[data-osort]");if(!h)return;const k=h.dataset.osort,sk=S.sortO||(S.sortO={k:"own_a",d:-1});
+  if(sk.k===k)sk.d*=-1;else{sk.k=k;sk.d=["name","team","pos"].includes(k)?1:-1}renderOwnPlayers()});
 
 // ---------- voittokokoonpano (lasketaan koneella simuloimalla, win.py) ----------
 function curIds(){return S.mode==="win"&&S.win?S.win.win.players:(S.sols[S.solIdx]||{ids:[]}).ids}
