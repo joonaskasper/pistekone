@@ -587,7 +587,7 @@ function renderWin(){const W=S.win,w=curWin(),o=W.opt,optIds=new Set(o.players);
   $("#alts").innerHTML="";
   const how=multi?(isCash?`valittu kokoonpano ylittää ${eur(w.contest)} kisan palkkarajan useimmin`:`0,23 € kisan kokoonpanot on valittu yhdessä: ne yltävät voittajan tasolle eri iltoina, jolloin vähintään yksi osuu mahdollisimman usein`)
     :`valittu kokoonpano yltää useimmin kisan voittajan tasolle (${eur(W.contest)} kisa)`;
-  $("#solveNote").textContent=`Laskettu mallin ajossa ${upd} budjetilla ${W.budget}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}: ilta simuloitu 10 000 kertaa, ja ${how}. Sivun budjetti, lukitukset ja poistot eivät muuta näitä kokoonpanoja.`;
+  $("#solveNote").textContent=`Laskettu mallin ajossa ${upd} budjetilla ${W.budget}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}: ilta simuloitu 10 000 kertaa, ja ${how}. ${W.basis==="katto"?" Tasot on arvioitu illan katosta (paras jälkikäteen mahdollinen kokoonpano) kaikista kirjatuista illoista.":""} Sivun budjetti, lukitukset ja poistot eivät muuta näitä kokoonpanoja.`;
 }
 
 // ---------- piirto: taulukot ----------
