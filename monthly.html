@@ -938,8 +938,13 @@ function planState(){const my=S.my;const chk=squadCheck(my.squad);
 // tarkka suunnitelma (monthly.py laskee koneella): käytetään, jos se alkaa samasta tilanteesta kuin oma joukkue
 function exactFor(st){const E=S.ds.exact;if(!E||!E.squads||!S.M)return null;
   const curDate=S.days[S.cur].date;const j=E.dates.indexOf(curDate);if(j<0)return null;
+  // villi kortti tarkassa suunnitelmassa (wc_date): vain jos se sopii sivun valintaan ja korttia ei ole jo käytetty
+  const wcFuture=E.wc_date&&E.wc_date>=curDate,wcIdx=wcFuture?S.days.findIndex(d=>d.date===E.wc_date):-1,mode=$("#wcMode").value;
+  if(wcFuture&&(st.wildcardUsed||mode==="none"||(mode!=="auto"&&+mode!==wcIdx)))return null;
+  if(!wcFuture&&mode!=="none"&&mode!=="auto")return null;
   const R=S.ds.rules;let req=E.state?{squad:E.state.squad.slice(),bank:E.state.bank,left:E.state.left}:null;
-  for(let d=0;d<j;d++){const sq=E.squads[d];if(req){const ps=new Set(req.squad);const t=sq.filter(id=>!ps.has(id)).length;req.bank-=t;req.left-=t}else req={squad:null,bank:0,left:R.transfers_total};
+  for(let d=0;d<j;d++){const sq=E.squads[d];if(req){const ps=new Set(req.squad);const t=sq.filter(id=>!ps.has(id)).length;
+      if(E.wc_date&&E.dates[d]===E.wc_date&&req.squad)req.bank=0;else{req.bank-=t;req.left-=t}}else req={squad:null,bank:0,left:R.transfers_total};
     req={squad:sq.slice(),bank:Math.min(req.bank+R.free_per_round,R.bank_max),left:req.left}}
   if(st.fresh){if(req)return null}
   else{if(!req||!req.squad)return null;const a=new Set(req.squad);if(st.squad.length!==a.size||!st.squad.every(id=>a.has(id)))return null;
@@ -948,7 +953,7 @@ function exactFor(st){const E=S.ds.exact;if(!E||!E.squads||!S.M)return null;
     const ids=E.squads[k];if(ids.some(id=>S.excl.has(id)))return null;sqObj[di]=ids.map(id=>S.M.byId.get(id));if(sqObj[di].some(i=>i===undefined))return null}
   for(let d=S.cur;d<S.days.length;d++)if(!sqObj[d])return null;
   if(S.keep.size){for(const id of S.keep)if(st.squad&&st.squad.includes(id)&&!Object.values(sqObj).every(q=>q.includes(S.M.byId.get(id))))return null}
-  const ctx={from:S.cur,fresh:!!st.fresh,sq0:st.fresh?null:st.squad.map(id=>S.M.byId.get(id)),bank0:st.bank||0,T:st.transfersLeft,wcDay:null};
+  const ctx={from:S.cur,fresh:!!st.fresh,sq0:st.fresh?null:st.squad.map(id=>S.M.byId.get(id)),bank0:st.bank||0,T:st.transfersLeft,wcDay:wcIdx>=0?wcIdx:null};
   const steps=PL.stepsFromSquads(S.M,sqObj,ctx);let total=0;for(const s of steps)for(const i of s.sq)total+=S.M.P[i].x[s.day];
   return {total,steps,E}}
 async function downloadState(){const my=S.my;const text=JSON.stringify({kind:"kuukausikone_tila",date:my.date,squad:my.squad,bank:my.bank,left:my.left,wcUsed:my.wcUsed,pre:!!my.pre,saved:new Date().toISOString()},null,1);
@@ -976,7 +981,7 @@ function computeAlts(tok){
       return outs.map(o=>{const k=ins.findIndex(i=>grp(S.byId[i])===grp(S.byId[o]));const i=ins.splice(k,1)[0];return [toIdx(o),toIdx(i)]})};
     const f0=S.plan.steps[0];
     S.alts=[{act:f0.act,first:f0.sq.reduce((s,i)=>s+S.M.P[i].x[S.cur],0),total:S.plan.total,isPlan:true},
-      ...E.alts.map(a=>({act:actOf(a.squad0),first:a.squad0.reduce((s,id)=>s+(S.byId[id]?S.byId[id].xd[S.cur]:0),0),total:a.total}))];
+      ...E.alts.map(a=>({act:a.wc===0?"wc":actOf(a.squad0),first:a.squad0.reduce((s,id)=>s+(S.byId[id]?S.byId[id].xd[S.cur]:0),0),total:a.total}))];
     S.alts.sort((a,b)=>b.total-a.total);S.altsDone=true;S.altMs=0;S.altSrc="exact";renderAlts();renderAction();return}
   S.altSrc="js";
   $("#alts").innerHTML='<span class="muted">Lasketaan vaihtoehtoja…</span>';
@@ -1096,7 +1101,7 @@ function renderPlan(){const t=$("#planTable");if(!S.plan){t.innerHTML="";return}
       <td class="x" style="--w:${Math.min(100,pts/60*100).toFixed(0)}%">${f1(pts)}</td><td>${f1(tot)}</td><td>${s.acts==="wc"?0:s.f}</td></tr>`}).join("");
   t.innerHTML=`<thead><tr><th class="l">Kierros</th><th>Otteluita</th><th class="l">Vaihdot</th><th>Pelaa</th><th>xPTS</th><th>Yhteensä</th><th>Säästössä seur.</th></tr></thead><tbody>${rows}</tbody>`;
   const E=S.ds.exact;
-  $("#planInfo").textContent=S.plan.src==="exact"?`${f1(S.plan.total)} xPTS · tarkka optimointi koneellasi ${E.created.replace("T"," klo ")}${E.bound?` · yläraja ${f1(E.bound)}`:""}`
+  $("#planInfo").textContent=S.plan.src==="exact"?`${f1(S.plan.total)} xPTS · tarkka optimointi koneellasi ${E.created.replace("T"," klo ")}${E.bound?` · yläraja ${f1(E.bound)}`:""}${E.wc_date&&E.wc_date>=S.days[S.cur].date?` · villi kortti ${dlab(E.wc_date)}`:""}`
     :`${f1(S.plan.total)} xPTS · selaimen haku ${(S.plan.ms/1000).toFixed(1)} s${E?" · tarkka suunnitelma ei koske tätä tilannetta":""}`}
 
 function renderTeam(){const my=S.my;if(!my)return;const chk=squadCheck(my.squad);
@@ -1117,9 +1122,9 @@ function winEnd(){const v=$("#fWin").value;return v==="all"?S.days.length:Math.m
 function b2bCount(p,from,to){let n=0;for(let d=from;d<to;d++){if(!p.gd[d])continue;const nx=S.days[d+1];
   if(nx&&p.gd[d+1]&&(new Date(nx.date)-new Date(S.days[d].date))===864e5)n++}return n}
 function fillSelects(){const teams=[...new Set(S.P.map(p=>p.club))].sort();$("#fTeam").innerHTML='<option value="">Kaikki</option>'+teams.map(t=>`<option>${t}</option>`).join("");
-  const wc=$("#wcMode"),cur=load("wc","none");
+  const wc=$("#wcMode"),cur=load("wc2","auto");
   wc.innerHTML='<option value="none">Ei käytetä</option><option value="auto">Paras kierros (haku valitsee)</option>'+S.days.map((d,i)=>i>=S.cur?`<option value="${i}">${dlab(d.date)}</option>`:"").join("");
-  wc.value=[...wc.options].some(o=>o.value===String(cur))?String(cur):"none";$("#acc").value=load("acc","fast")}
+  wc.value=[...wc.options].some(o=>o.value===String(cur))?String(cur):"auto";$("#acc").value=load("acc","fast")}
 function renderPlayers(){const t=$("#playersTable");if(!S.ds)return;
   const pos=$("#fPos").value,team=$("#fTeam").value,mx=+$("#fPrice").value||99,q=$("#fSearch").value.trim().toLowerCase();
   const a=S.cur,b=winEnd();const my=new Set(S.my.squad);
@@ -1163,7 +1168,7 @@ $$("nav.tabs button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset
 window.addEventListener("hashchange",()=>{const t=location.hash.slice(1);if($("#tab-"+t))setTab(t)});
 ["#fPos","#fTeam","#fPrice","#fSearch","#fWin"].forEach(s=>$(s).addEventListener("input",renderPlayers));
 $("#addSearch").addEventListener("input",renderAddList);
-$("#wcMode").addEventListener("change",()=>{store("wc",$("#wcMode").value);replan()});
+$("#wcMode").addEventListener("change",()=>{store("wc2",$("#wcMode").value);replan()});
 $("#acc").addEventListener("change",()=>{store("acc",$("#acc").value);replan()});
 let teamT;function teamChanged(){saveMy();renderTeam();renderSetup();clearTimeout(teamT);teamT=setTimeout(replan,400)}
 $("#bank").addEventListener("change",()=>{S.my.bank=Math.max(0,Math.min(32,Math.round(+$("#bank").value||0)));S.my.pre=false;teamChanged()});
