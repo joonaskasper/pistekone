@@ -199,7 +199,7 @@ td.cell.has{background:var(--accent-soft)}
 
   <!-- PELAAJAT -->
   <section id="tab-players" class="stack" hidden>
-    <div><h2>Pelaajat</h2><p class="lede">Odotetut fantasypisteet tämän illan otteluun. Lukitse pelaaja kokoonpanoon tai poista hänet; optimoija laskee kokoonpanon heti uudelleen. Klikkaa nimeä nähdäksesi pisteiden erittelyn.</p></div>
+    <div><h2>Pelaajat</h2><p class="lede">Odotetut fantasypisteet tämän illan otteluun. Lukitse pelaaja kokoonpanoon tai poista hänet; optimoija laskee kokoonpanon heti uudelleen. Klikkaa nimeä nähdäksesi pisteiden erittelyn. Omistus* = ennuste siitä, kuinka moni 0,23 €:n kisan osallistuja valitsee pelaajan (ei vaikuta kokoonpanoihin).</p></div>
     <div class="panel ctrls">
       <div class="ctrl"><label for="fPos">Pelipaikka</label><select id="fPos"><option value="">Kaikki kenttäpelaajat</option><option value="C">Keskushyökkääjät</option><option value="W">Laitahyökkääjät</option><option value="D">Puolustajat</option></select></div>
       <div class="ctrl"><label for="fTeam">Joukkue</label><select id="fTeam"><option value="">Kaikki</option></select></div>
@@ -255,6 +255,8 @@ td.cell.has{background:var(--accent-soft)}
       <div class="panel stack" id="ownPanel" hidden><h3>Omistusprosentit</h3>
         <p class="muted" style="margin:0">Kenttä = keskimääräinen kilpailijan kokoonpano (omistusprosentit x pisteet): mallin ennuste ja toteutunut. Omistus = kokoonpanon pelaajien omistusprosentit yhteensä; pienempi luku = erottuvampi kokoonpano (9 pelaajaa, keskiarvo kentässä 900 % / 9 = 100 %).</p>
         <div class="tw"><table id="trackOwn"></table></div>
+        <div id="ownPredBox" class="stack" hidden><h3>Omistusennusteen osuvuus</h3>
+          <p class="muted" style="margin:0" id="ownPredNote"></p><div class="tw"><table id="ownPred"></table></div></div>
         <div class="row" style="justify-content:space-between;align-items:flex-end"><h3>Pelaajat</h3><div class="ctrl"><label for="ownSel">Ilta ja kisa</label><select id="ownSel"></select></div></div>
         <div class="grid2"><div class="stack"><b>Suosituimmat</b><div class="tw"><table id="ownTop"></table></div></div>
           <div class="stack"><b>Vähän valitut onnistujat (omistus alle 5 %)</b><div class="tw"><table id="ownSleep"></table></div></div></div>
@@ -262,6 +264,8 @@ td.cell.has{background:var(--accent-soft)}
         <p class="muted" style="margin:0">Keskiarvo illoista, joina pelaaja oli kisan pelaajalistalla. Kisojen sarakkeet voivat sisältää eri iltoja (5,75 € listoja on vähemmän). xPTS ja pisteet samojen iltojen keskiarvoja. Järjestä klikkaamalla otsikkoa.</p>
         <div class="tw" style="max-height:60vh"><table id="ownPlayers"></table></div>
       </div>
+      <div class="panel stack" id="pricePanel" hidden><h3>Pisteiden ennustaminen: xPTS ja Pafin hinta</h3>
+        <p class="muted" style="margin:0" id="priceNote"></p><div class="tw"><table id="priceTbl"></table></div></div>
       <div class="panel stack"><h3>Illoittain</h3><div class="tw"><table id="trackDaily"></table></div></div>
       <p class="muted" style="margin:0" id="trackStamp"></p>
     </div>
@@ -278,7 +282,7 @@ td.cell.has{background:var(--accent-soft)}
         <h3>Päivitä illan data</h3>
         <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">
           <li>Aja koneellasi <span class="mono">.\run_dfs.bat budjetti</span>, lähellä lukitusta, kun aloittavat maalivahdit on vahvistettu.</li>
-          <li>Valitse alta kansiosta <span class="mono">output_daily</span> tiedostot <span class="mono">expected_points_per_game.csv</span> ja <span class="mono">expected_games.csv</span>, sekä seurantaa ja voittokokoonpanoa varten <span class="mono">seuranta.json</span> ja <span class="mono">voitto.json</span>.</li>
+          <li>Valitse alta kansiosta <span class="mono">output_daily</span> tiedostot <span class="mono">expected_points_per_game.csv</span> ja <span class="mono">expected_games.csv</span>, sekä seurantaa, kisakokoonpanoja ja omistusennustetta varten <span class="mono">seuranta.json</span>, <span class="mono">voitto.json</span> ja <span class="mono">omistusennuste.json</span>.</li>
           <li>Sivu laskee kokoonpanot ja todennäköisyydet uudelleen ja tallentaa datan, jolloin se näkyy myös puhelimessa.</li>
         </ol>
         <input id="csvFiles" type="file" accept=".csv,text/csv,.json,application/json" multiple aria-label="Mallin tulostiedostot">
@@ -374,6 +378,8 @@ function useDataset(ds){
   S.P=ds.players.map(r=>{const o={};F.forEach((k,i)=>o[k]=r[i]);o.name=(o.fn+" "+o.ln).trim();o.pp=o.pp||0;o.av=o.av??1;o.x=o.x||0;
     o.ppx=o.price>0?o.x/o.price:0;if(o.pos!=="G"&&o.games===1)for(const [k,,f] of PROPS)o["p_"+k]=f(o);return o});
   S.byId=Object.fromEntries(S.P.map(p=>[p.id,p]));
+  const OP=ds.own&&ds.own.date===ds.date&&ds.own.pred?ds.own.pred:null;S.ownPred=!!OP;
+  S.P.forEach(p=>{const v=OP&&OP[p.id];p.po=v?v[0]:undefined;p.po5=v?v[1]:undefined});
   const W=ds.win;S.win=W&&W.date===ds.date&&W.win&&W.win.players.every(id=>S.byId[id])?W:null;
   S.wlist=S.win?(W.lineups&&W.lineups.length?W.lineups:[Object.assign({key:"a1",label:"Voittokokoonpano",goal:"win",contest:W.contest,target:W.target},W.win)]).filter(L=>L.players.every(id=>S.byId[id])):[];
   const sm=load("mode","opt");S.mode=S.wlist.some(L=>L.key===sm)?sm:(sm==="win"&&S.wlist.length?S.wlist[0].key:"opt");
@@ -521,7 +527,7 @@ function renderLineup(){
   $("#sum").innerHTML=`<div class="stat"><div class="k">xPTS</div><div class="v">${f1(sol.val)}</div></div>
     <div class="stat"><div class="k">Hinta</div><div class="v">${f1(price)}</div></div>
     <div class="stat"><div class="k">Jäljellä</div><div class="v">${f1(budget-price)}</div></div>
-    <div class="stat"><div class="k">xPTS / hinta</div><div class="v">${f2(sol.val/price)}</div></div>`;
+    ${S.ownPred?`<div class="stat"><div class="k">Omistus* yhteensä</div><div class="v">${Math.round(ps.reduce((s,p)=>s+(p.po||0),0))} %</div></div>`:`<div class="stat"><div class="k">xPTS / hinta</div><div class="v">${f2(sol.val/price)}</div></div>`}`;
   const tc={};ps.forEach(p=>tc[p.club]=(tc[p.club]||0)+1);
   const unsure=ps.filter(p=>p.av<0.9);
   $("#teamsBox").hidden=false;
@@ -543,7 +549,19 @@ function renderOwn(t){const rows=(t.ownership||[]).slice().reverse();$("#ownPane
   const sel=$("#ownSel"),cur=sel.value;sel.innerHTML=rows.map((r,i)=>`<option value="${i}">${esc(lab(r))}</option>`).join("");if(cur&&+cur<rows.length)sel.value=cur;
   const show=()=>{const r=rows[+sel.value||0];const tb=L=>`<thead><tr><th class="l">Pelaaja</th><th>Omistus</th><th>xPTS</th><th>Pisteet</th></tr></thead><tbody>${(L||[]).map(x=>`<tr><td class="l">${esc(x.name)}</td><td class="num">${f1(x.own)} %</td><td class="num">${f1(x.xp)}</td><td class="num">${f1(x.res)}</td></tr>`).join("")}</tbody>`;
     $("#ownTop").innerHTML=tb(r.top);$("#ownSleep").innerHTML=tb(r.sleepers)};
-  sel.onchange=show;show();renderOwnPlayers()}
+  sel.onchange=show;show();renderOwnPlayers();renderOwnPred(t)}
+const f3=v=>v==null||isNaN(v)?"–":Number(v).toFixed(3);
+function renderPrice(t){const c=t&&t.price_check,box=$("#pricePanel");if(!c||!(c.nights||[]).length){box.hidden=true;return}box.hidden=false;
+  const p=c.pooled,best=p.r2_xp>p.r2_x+0.01?"Yhdistelmä ennustaa toistaiseksi parhaiten.":p.r2_x>=p.r2_p?"xPTS ennustaa toistaiseksi vähintään yhtä hyvin kuin hinta.":"Hinta ennustaa toistaiseksi hieman paremmin kuin xPTS.";
+  $("#priceNote").textContent=`Seurantaa varten, ei vaikuta malliin. Pafin toteutuneet pisteet (omistuslistojen tulos) ja kolme ennustetta: mallin xPTS, Pafin hinta ja niiden yhdistelmä. Selitysaste = kuinka suuren osan pisteiden vaihtelusta ennuste selittää illan sisällä, kun ilta ennustetaan muiden iltojen datalla (yksittäisen pelaajan illan pisteet ovat hyvin satunnaisia, joten luvut ovat pieniä). Yhteensä ${c.n} pelaajailtaa: xPTS ${f3(p.r2_x)}, hinta ${f3(p.r2_p)}, yhdessä ${f3(p.r2_xp)}. ${best} Päätös hinnan yhdistämisestä tehdään, kun iltoja on 15-20.`;
+  const rows=c.nights.slice().reverse();
+  $("#priceTbl").innerHTML=`<thead><tr><th class="l">Ilta</th><th>Pelaajia</th><th>xPTS</th><th>Hinta</th><th>Yhdessä</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="l">${esc(r.date)}${r.slate?" "+(r.slate==="yo"?"yö":esc(r.slate)):""}</td><td class="num">${r.n}</td><td class="num">${f3(r.r2_x)}</td><td class="num">${f3(r.r2_p)}</td><td class="num">${f3(r.r2_xp)}</td></tr>`).join("")}<tr><td class="l"><b>Yhteensä</b></td><td class="num">${c.n}</td><td class="num"><b>${f3(p.r2_x)}</b></td><td class="num"><b>${f3(p.r2_p)}</b></td><td class="num"><b>${f3(p.r2_xp)}</b></td></tr></tbody>`}
+function renderOwnPred(t){const o=t.own_pred,box=$("#ownPredBox");if(!o||(!o.backtest&&!(o.nights||[]).length)){box.hidden=true;return}box.hidden=false;
+  const b=o.backtest;
+  $("#ownPredNote").textContent=`Omistus* = mallin ennuste ennen kisaa (hinta, xPTS ja niiden järjestys illan pelaajista). Ei vaikuta kokoonpanoihin. Korrelaatio: 1 = täydellinen. Suosikkien virhe = keskimääräinen ero prosenttiyksikköinä pelaajilla, joiden omistus oli vähintään 10 %. Top 5 = illan viidestä suosituimmasta ennusteen kymmenen kärjessä.${b?` Takautuva testi ${o.backtest_n} kisasta (ilta ennustettu muiden iltojen datalla): korrelaatio ${f2(b.corr)}, suosikkien virhe ${f1(b.mae_fav)} %-yks., top 5 ${pct(b.top5)}.`:""}`;
+  const rows=(o.nights||[]).slice().reverse();
+  $("#ownPred").innerHTML=rows.length?`<thead><tr><th class="l">Ilta ja kisa</th><th>Korrelaatio</th><th>Suosikkien virhe</th><th>Top 5</th><th>Pelaajia</th></tr></thead><tbody>${rows.map(r=>`<tr><td class="l">${esc(r.date)}${r.slate?" "+(r.slate==="yo"?"yö":esc(r.slate)):""} · ${String(Number(r.contest).toFixed(2)).replace(".",",")} €</td><td class="num">${f2(r.corr)}</td><td class="num">${r.mae_fav!=null?f1(r.mae_fav)+" %-yks.":"–"}</td><td class="num">${pct(r.top5)}</td><td class="num">${r.n}</td></tr>`).join("")}</tbody>`
+    :'<tbody><tr><td class="muted">Ennusteita verrataan toteutuneeseen, kun ennustetun illan omistuslista on tallennettu.</td></tr></tbody>'}
 function renderOwnPlayers(){const t=S.track;const all=(t&&t.own_players)||[];const q=($("#ownQ").value||"").toLowerCase();
   const sk=S.sortO||(S.sortO={k:"own_a",d:-1});
   let rows=all.filter(r=>!q||r.name.toLowerCase().includes(q)||String(r.team).toLowerCase().includes(q));
@@ -575,7 +593,7 @@ function renderWin(){const W=S.win,w=curWin(),o=W.opt,optIds=new Set(o.players);
     ${isCash?`<div class="stat"><div class="k">0,23 € voittajan tasolle</div><div class="v">${pc1(w.p_win)}</div></div>`
       :multi&&W.p_any!=null?`<div class="stat"><div class="k">Vähintään yksi 0,23 € osuu</div><div class="v">${pc1(W.p_any)}</div></div>`:`<div class="stat"><div class="k">Palkkarajalle</div><div class="v">${pc1(w.p_cash)}</div></div>`}
     <div class="stat"><div class="k">Odotus</div><div class="v">${f1(w.mean)}</div></div>
-    <div class="stat"><div class="k">Hinta</div><div class="v">${f1(price)}</div></div>`;
+    ${S.ownPred?`<div class="stat"><div class="k">Omistus* yhteensä</div><div class="v">${Math.round(ps.reduce((s,p)=>s+(isCash?(p.po5||0):(p.po||0)),0))} %</div></div>`:`<div class="stat"><div class="k">Hinta</div><div class="v">${f1(price)}</div></div>`}`;
   const tc={};ps.forEach(p=>tc[p.club]=(tc[p.club]||0)+1);
   const all=multi?W.lineups:[w];
   const row=(lab,r,b)=>`<tr><td class="l">${b?"<b>"+esc(lab)+"</b>":esc(lab)}</td><td class="num">${f1(r.mean)}</td><td class="num">${f1(r.p90)}</td><td class="num">${pc1(r.p_win)}</td><td class="num">${pc1(r.p_cash)}</td>${multi?`<td class="num">${pc1(r.p_cash_b)}</td>`:""}</tr>`;
@@ -599,23 +617,23 @@ function renderPlayers(){
   const inSol=new Set(curIds());
   let rows=S.P.filter(p=>p.pos!=="G"&&(!fp||p.pos===fp)&&(!ft||p.club===ft)&&p.price<=fm&&(!q||p.name.toLowerCase().includes(q))&&(fa==="all"||p.av>0.05));
   rows=sortRows(rows,S.sortP);const mx=Math.max(...rows.map(p=>p.x),1);
-  const cols=[["pos","Pp","l"],["name","Pelaaja","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["role","Rooli","l"],["price","Hinta"],["x","xPTS"],["ppx","xPTS/hinta"],["toi","Jääaika"],["ms","Laukaukset"],["mp","Pisteet"],["av","Pelaa"],["act","","l"]];
+  const cols=[["pos","Pp","l"],["name","Pelaaja","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["role","Rooli","l"],["price","Hinta"],["x","xPTS"],["ppx","xPTS/hinta"],["toi","Jääaika"],["ms","Laukaukset"],["mp","Pisteet"],["av","Pelaa"],...(S.ownPred?[["po","Omistus*"]]:[]),["act","","l"]];
   rows.forEach(p=>{p.role=roleText(p);p.toi=(p.toiES||0)+(p.toiPP||0)+(p.toiSH||0)});
   $("#ptable").innerHTML=th(cols,S.sortP,"P")+"<tbody>"+rows.slice(0,400).map(p=>`<tr class="${inSol.has(p.id)?"sel":""}">
     <td class="l"><span class="ps2">${POSFI[p.pos]}</span></td><td class="l"><button class="btn small" style="border:0;padding:0;background:none;font-weight:600" data-detail="${p.id}">${esc(p.name)}</button></td>
     <td class="l">${esc(p.club)}</td><td class="l">${esc(p.opp)}</td><td class="l">${esc(p.role)}</td><td class="num">${f1(p.price)}</td>
     <td class="x" style="--w:${(p.x/mx*100).toFixed(0)}%">${f1(p.x)}</td><td class="num">${f2(p.ppx)}</td><td class="num">${f1(p.toi)}</td><td class="num">${f1(p.ms)}</td><td class="num">${f2(p.mp)}</td>
-    <td>${p.av<0.9?`<span class="pill warn">${pct(p.av)}</span>`:pct(p.av)}</td>
+    <td>${p.av<0.9?`<span class="pill warn">${pct(p.av)}</span>`:pct(p.av)}</td>${S.ownPred?`<td class="num">${p.po!=null?f1(p.po)+" %":"–"}</td>`:""}
     <td class="l"><button class="btn small" data-lock="${p.id}" aria-pressed="${S.locks.has(p.id)}">Lukitse</button> <button class="btn small" data-excl="${p.id}" aria-pressed="${S.excl.has(p.id)}">Pois</button></td></tr>`).join("")+"</tbody>";
 }
 function renderGoalies(){
   if(!S.ds){$("#gtable").innerHTML="";return}
   const inSol=new Set(curIds());
   let rows=sortRows(S.P.filter(p=>p.pos==="G"&&p.av>0.02),S.sortG);const mx=Math.max(...rows.map(p=>p.x),1);
-  const cols=[["name","Maalivahti","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["price","Hinta"],["av","Aloittaa"],["xi","Jos aloittaa"],["x","xPTS"],["pw","Voitto"],["sa","Laukauksia"],["ga","Päästetyt"],["s35","35+ torj."],["so","Nollapeli"],["act","","l"]];
+  const cols=[["name","Maalivahti","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["price","Hinta"],["av","Aloittaa"],["xi","Jos aloittaa"],["x","xPTS"],["pw","Voitto"],["sa","Laukauksia"],["ga","Päästetyt"],["s35","35+ torj."],["so","Nollapeli"],...(S.ownPred?[["po","Omistus*"]]:[]),["act","","l"]];
   $("#gtable").innerHTML=th(cols,S.sortG,"G")+"<tbody>"+rows.map(p=>`<tr class="${inSol.has(p.id)?"sel":""}"><td class="l"><button class="btn small" style="border:0;padding:0;background:none;font-weight:600" data-detail="${p.id}">${esc(p.name)}</button></td><td class="l">${esc(p.club)}</td><td class="l">${esc(p.opp)}</td>
     <td class="num">${f1(p.price)}</td><td>${p.av>=0.9?`<span class="pill good">${pct(p.av)}</span>`:p.av<0.5?`<span class="pill">${pct(p.av)}</span>`:`<span class="pill warn">${pct(p.av)}</span>`}</td>
-    <td class="num">${f1(p.xi)}</td><td class="x" style="--w:${(p.x/mx*100).toFixed(0)}%">${f1(p.x)}</td><td class="num">${pct(p.pw)}</td><td class="num">${f1(p.sa)}</td><td class="num">${f2(p.ga)}</td><td class="num">${pct(p.s35)}</td><td class="num">${pct(p.so)}</td>
+    <td class="num">${f1(p.xi)}</td><td class="x" style="--w:${(p.x/mx*100).toFixed(0)}%">${f1(p.x)}</td><td class="num">${pct(p.pw)}</td><td class="num">${f1(p.sa)}</td><td class="num">${f2(p.ga)}</td><td class="num">${pct(p.s35)}</td><td class="num">${pct(p.so)}</td>${S.ownPred?`<td class="num">${p.po!=null?f1(p.po)+" %":"–"}</td>`:""}
     <td class="l"><button class="btn small" data-lock="${p.id}" aria-pressed="${S.locks.has(p.id)}">Lukitse</button> <button class="btn small" data-excl="${p.id}" aria-pressed="${S.excl.has(p.id)}">Pois</button></td></tr>`).join("")+"</tbody>";
 }
 function renderGames(){
@@ -686,7 +704,7 @@ function renderTrack(){const t=S.track;$("#trackEmpty").hidden=!!t;$("#trackBody
     const title=`Paras odotus: ${(r.players||[]).join(", ")}${w?"\nVoittokokoonpano: "+(w.players||[]).join(", "):""}${more.map(m=>"\n"+(KL[m.key]||m.key)+": "+(m.players||[]).join(", ")).join("")}`;
     return `<tr title="${esc(title)}"><td class="l">${esc(r.date)}${r.slate?` <span class="muted">${r.slate==="yo"?"yö":esc(r.slate)}</span>`:""}</td><td class="num">${f1(r.exp)}</td><td class="num">${r.act!=null?f1(r.act):"–"}</td><td class="num">${w?f1(w.exp):"–"}</td><td class="num">${w&&w.act!=null?f1(w.act):"–"}</td><td class="l">${more.length?more.map(m=>`${esc(KL[m.key]||m.key)}: ${m.act!=null?f1(m.act):"–"}`).join(" · "):'<span class="muted">–</span>'}</td><td class="l">${cuts||'<span class="muted">–</span>'}</td></tr>`}).join("")}</tbody>`;
   rowsTable("#trackDaily",(t.daily||[]).slice().reverse(),"Ilta");
-  renderOwn(t);
+  renderOwn(t);renderPrice(t);
   $("#trackStamp").textContent=`Seuranta ${t.first} – ${t.last}, päivitetty ${String(t.updated).replace("T"," klo ")}. Palkkarajoja kirjattu: ${t.cutlines||0}.`}
 
 // ---------- pelaajan erittely ----------
@@ -743,17 +761,17 @@ function editOdds(td){if(td.querySelector("input"))return;const key=td.dataset.o
 
 // ---------- tiedostojen lataus ----------
 $("#csvFiles").addEventListener("change",async e=>{const files=[...e.target.files];const msg=$("#dataMsg");if(!files.length)return;
-  try{let pg=null,gm=null,tr=null,wn=null;
+  try{let pg=null,gm=null,tr=null,wn=null,op=null;
     for(const f of files){const txt=await f.text();
-      if(/\.json$/i.test(f.name)||txt.trim().startsWith("{")){try{const j=JSON.parse(txt);if(j&&j.kind==="tracking")tr=j;if(j&&j.kind==="win")wn=j}catch(e){}continue}
+      if(/\.json$/i.test(f.name)||txt.trim().startsWith("{")){try{const j=JSON.parse(txt);if(j&&j.kind==="tracking")tr=j;if(j&&j.kind==="win")wn=j;if(j&&j.kind==="ownpred")op=j}catch(e){}continue}
       const rows=parseCSV(txt);if(!rows.length)continue;const h=Object.keys(rows[0]);
       if(h.includes("e_pts")&&h.includes("PlayerID")&&h.includes("date"))pg=rows;else if(h.includes("lam_home"))gm=rows;}
     if(tr){useTrack(tr);if(S.db&&S.isOwner){try{await S.db.doc("datasets/tracking").set(tr)}catch(err){}}}
-    if(!pg&&wn&&S.ds&&wn.date===S.ds.date){const ds=Object.assign({},S.ds,{win:wn});useDataset(ds);
+    if(!pg&&(wn||op)&&S.ds&&((wn&&wn.date===S.ds.date)||(op&&op.date===S.ds.date))){const ds=Object.assign({},S.ds);if(wn&&wn.date===S.ds.date)ds.win=wn;if(op&&op.date===S.ds.date)ds.own=op;useDataset(ds);
       if(S.db&&S.isOwner){try{await S.db.doc("datasets/latest").set(ds)}catch(err){}}else{try{localStorage.setItem("pk:ds",JSON.stringify(ds))}catch(err){}}
-      msg.textContent="Voittokokoonpano lisätty.";toast("Voittokokoonpano lisätty");return}
+      msg.textContent=wn?"Kisakokoonpanot lisätty.":"Omistusennuste lisätty.";toast(msg.textContent);return}
     if(!pg){msg.textContent=tr?"Seuranta päivitetty.":"Tiedostoa expected_points_per_game.csv ei löytynyt valinnasta. Valitse se kansiosta output_daily.";if(tr)toast("Seuranta päivitetty");return}
-    const ds=buildDataset(pg,gm);if(wn&&wn.date===ds.date){ds.win=wn;ds.budget=wn.budget;ds.max_per_team=wn.max_per_team}useDataset(ds);
+    const ds=buildDataset(pg,gm);if(wn&&wn.date===ds.date){ds.win=wn;ds.budget=wn.budget;ds.max_per_team=wn.max_per_team}if(op&&op.date===ds.date)ds.own=op;useDataset(ds);
     msg.textContent=`Ladattu: ${ds.players.length} pelaajaa${gm?`, ${ds.games.length} ottelua`:" (otteluita ei valittu, Ottelut-välilehti jää tyhjäksi)"}.`;
     if(S.db&&S.isOwner){try{await S.db.doc("datasets/latest").set(ds);msg.textContent+=" Tallennettu: näkyy myös muilla laitteillasi."}catch(err){msg.textContent+=" Tallennus ei onnistunut ("+(err&&err.code||"virhe")+"); data on käytössä vain tällä kertaa."}}
     else{msg.textContent+=" Data on käytössä tässä selaimessa.";try{localStorage.setItem("pk:ds",JSON.stringify(ds))}catch(err){}}
