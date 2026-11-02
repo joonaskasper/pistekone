@@ -933,7 +933,9 @@ function planOpts(){const acc=$("#acc").value;const wc=$("#wcMode").value;
   const params=acc==="full"?[...base,{L:5,g:.9,bv:6,rho:.8,H:6},{L:7,g:.9,bv:10,rho:.8,H:6}]:base;
   return {params,width:acc==="full"?220:150,M:8,pairOuts:7,pairCand:20,polish:1,restarts:0,keep:[...S.keep],wildcard:wc==="none"?undefined:wc==="auto"?"auto":+wc}}
 function planState(){const my=S.my;const chk=squadCheck(my.squad);
-  if(preTournament()||!chk.ok)return {from:S.cur,transfersLeft:my.left,wildcardUsed:my.wcUsed,fresh:true};
+  if(!chk.ok)return {from:S.cur,transfersLeft:my.left,wildcardUsed:my.wcUsed,fresh:true};
+  // ennen 1. kierrosta syötetty joukkue = oma aloitusjoukkue: suunnitelma siitä (1. kierroksella ei vaihtoja)
+  if(preTournament())return {from:S.cur,squad:my.squad.slice(),bank:0,transfersLeft:my.left,wildcardUsed:my.wcUsed,pre:true};
   return {from:S.cur,squad:my.squad.slice(),bank:my.bank,transfersLeft:my.left,wildcardUsed:my.wcUsed}}
 // tarkka suunnitelma (monthly.py laskee koneella): käytetään, jos se alkaa samasta tilanteesta kuin oma joukkue
 function exactFor(st){const E=S.ds.exact;if(!E||!E.squads||!S.M)return null;
@@ -947,6 +949,7 @@ function exactFor(st){const E=S.ds.exact;if(!E||!E.squads||!S.M)return null;
       if(E.wc_date&&E.dates[d]===E.wc_date&&req.squad)req.bank=0;else{req.bank-=t;req.left-=t}}else req={squad:null,bank:0,left:R.transfers_total};
     req={squad:sq.slice(),bank:Math.min(req.bank+R.free_per_round,R.bank_max),left:req.left}}
   if(st.fresh){if(req)return null}
+  else if(st.pre&&j===0&&!E.state){const a=new Set(E.squads[0]);if(st.squad.length!==a.size||!st.squad.every(id=>a.has(id)))return null}
   else{if(!req||!req.squad)return null;const a=new Set(req.squad);if(st.squad.length!==a.size||!st.squad.every(id=>a.has(id)))return null;
     if(st.bank<req.bank||st.transfersLeft<req.left)return null}
   const sqObj={};for(let k=j;k<E.dates.length;k++){const di=S.days.findIndex(d=>d.date===E.dates[k]);if(di<0)return null;
@@ -973,7 +976,7 @@ function replan(){
   }catch(err){S.plan=null;toast("Suunnitelmaa ei voitu laskea: "+(err&&err.message||err))}
   $("#busy").hidden=true;renderAll();if(tok===planTok)setTimeout(()=>computeAlts(tok),60)},30)}
 function computeAlts(tok){
-  const st=planState();if(st.fresh||!S.plan){$("#alts").innerHTML='<span class="muted">Vaihtoehdot näytetään, kun oma joukkue on syötetty (Oma joukkue).</span>';$("#altInfo").textContent="";return}
+  const st=planState();if(st.fresh||st.pre||!S.plan){$("#alts").innerHTML=st.pre?'<span class="muted">Vaihtoehdot näytetään ensimmäisestä vaihtokierroksesta alkaen.</span>':'<span class="muted">Vaihtoehdot näytetään, kun oma joukkue on syötetty (Oma joukkue).</span>';$("#altInfo").textContent="";S.altsDone=true;return}
   const E=S.ds.exact;
   if(S.plan.src==="exact"&&E&&E.alts){            // tarkat vaihtoehdot koneelta
     const grp=p=>p.pos==="G"?"G":"S";const my=S.my.squad;const toIdx=id=>S.M.byId.get(id);
@@ -1030,6 +1033,7 @@ function tokenHTML(p,d,isNew){const g=p.gd[d];const lk=S.keep.has(p.id)?'<span c
 
 function renderSetup(){const el=$("#setupNote");if(!S.ds||!S.my){el.hidden=true;return}
   const chk=squadCheck(S.my.squad);
+  if(preTournament()&&S.my.squad.length&&!chk.ok){el.innerHTML=`<b>Aloitusjoukkue on kesken</b><span>Suunnitelma näyttää parhaan aloitusjoukkueen tyhjästä, kunnes joukkueesi on sääntöjen mukainen (${esc(chk.errs.join(", "))}).</span><span class="row"><button class="btn primary small" data-go="team">Oma joukkue</button></span>`;el.hidden=false;return}
   if(preTournament()&&!S.my.squad.length){el.innerHTML='<b>Ennen ensimmäistä kierrosta</b><span>Alla on suositeltu aloitusjoukkue ja koko jakson vaihtosuunnitelma. Kun olet valinnut joukkueen pelissä, tallenna se, niin suunnitelma lasketaan jatkossa omasta joukkueestasi.</span>';el.hidden=false;return}
   if(!preTournament()&&!chk.ok){el.innerHTML=`<b>Syötä nykyinen joukkueesi</b><span>Suunnitelma näyttää nyt parhaan joukkueen tyhjästä. Syötä oma joukkueesi ja säästetyt vaihdot välilehdellä Oma joukkue, niin saat vaihtosuositukset omalle joukkueellesi.${S.my.squad.length?" ("+esc(chk.errs.join(", "))+")":""}</span><span class="row"><button class="btn primary small" data-go="team">Oma joukkue</button></span>`;el.hidden=false;return}
   el.hidden=true}
@@ -1044,7 +1048,7 @@ function renderAction(){
   if(!S.plan){$("#actionPanel").innerHTML='<span class="muted">Ei suunnitelmaa.</span>';return}
   const steps=stepsIds(),d0=S.cur,day=S.days[d0],first=steps[0];
   const viewIdx=S.view==null?0:S.view;const vs=steps[viewIdx];const vd=vs.day;
-  $("#roundTitle").textContent=(viewIdx===0?(S.plan.fresh?"Aloitusjoukkue":"Tämän kierroksen joukkue"):"Suunnitelma")+` · ${dlab(S.days[vd].date)}`;
+  $("#roundTitle").textContent=(viewIdx===0?(S.plan.fresh||preTournament()?"Aloitusjoukkue":"Tämän kierroksen joukkue"):"Suunnitelma")+` · ${dlab(S.days[vd].date)}`;
   $("#roundDeadline").textContent=S.days[vd].utc?"takaraja "+tlab(S.days[vd].utc):"";
   const ps=vs.ids.map(id=>S.byId[id]);const prevIds=new Set(viewIdx===0?(S.plan.fresh?[]:S.my.squad):steps[viewIdx-1].ids);
   const rows=formation(ps,vd);
@@ -1058,7 +1062,11 @@ function renderAction(){
     ["Vaihtoja suunnitelmassa",`${used}/${S.my.left}`],["Joukkueen hinta",f1(cost)]].map(([k,v])=>`<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`).join("");
   // suositus
   let h="";
-  if(S.plan.fresh){
+  if(!S.plan.fresh&&preTournament()){
+    const E=S.ds.exact,best=E&&!E.state&&E.dates&&E.dates[0]===S.days[S.cur].date?E.total:null;
+    h=`<h3>Oma aloitusjoukkueesi</h3><p style="margin:0">Suunnitelma on laskettu syöttämästäsi joukkueesta. Ennen ensimmäisen kierroksen takarajaa joukkuetta voi vielä muuttaa vapaasti${best!=null?`; suositellulla aloitusjoukkueella koko jakson odotus on ${f1(best)} xPTS (tämä joukkue ${f1(S.plan.total)})`:""}. Suositellun joukkueen näet tyhjentämällä oman joukkueen.</p>
+      <div class="row"><button class="btn" data-go="team">Muokkaa joukkuetta</button></div>`;
+  }else if(S.plan.fresh){
     h=`<h3>Suositeltu aloitusjoukkue</h3><p style="margin:0">Joukkue on valittu koko jakson odotettujen pisteiden mukaan ja niin, että tulevilla vaihdoilla saa eniten lisää. Kun olet valinnut sen pelissä, paina alla, niin suunnitelma laskee jatkossa sinun joukkueestasi.</p>
       <div class="row"><button class="btn primary" data-act="useInitial">Valitsin tämän joukkueen</button><button class="btn" data-go="team">Syötä oma joukkue</button></div>`;
   }else if(first.acts==="wc"){
