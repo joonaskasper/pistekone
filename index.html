@@ -585,27 +585,33 @@ const pc1=v=>v==null||isNaN(v)?"–":(v*100).toFixed(1)+" %";
 function renderWin(){const W=S.win,w=curWin(),o=W.opt,optIds=new Set(o.players);
   const ps=w.players.map(id=>S.byId[id]);
   const multi=!!(W.lineups&&W.lineups.length),eur=c=>String(Number(c).toFixed(2)).replace(".",",")+" €";
-  const isCash=w.goal==="cash";
-  $("#luTitle").textContent=multi?(isCash?`${eur(w.contest)}: palkkarajalle`:`${eur(w.contest)}: voittoon (${w.label.split("·").pop().trim()})`):"Voittokokoonpano";
+  const isCash=w.goal==="cash",isB=String(w.key||"").startsWith("b");
+  const sfx=String(w.label||"").includes("·")?w.label.split("·").pop().trim().replace(/^(palkat|voitto)\s*/,""):"";
+  $("#luTitle").textContent=multi?`${eur(w.contest)}: ${isCash?"palkkarajalle":"voittoon"}${sfx?` (${sfx})`:""}`:"Voittokokoonpano";
   const rows=formation(ps);
   $("#rink").innerHTML=`<div class="rink" style="--rows:${rows.length}">${RINK}${rows.map(rw=>`<div class="rrow">${rw.map(p=>tokenHTML(p,!optIds.has(p.id),"ero")).join("")}</div>`).join("")}</div>`;
   const price=ps.reduce((s,p)=>s+p.price,0);
-  const pMain=isCash?w.p_cash_b:w.p_win;
+  const pMain=isCash?w.p_cash_b:(isB&&w.p_win_b!=null?w.p_win_b:w.p_win);
+  const bAny=isB?(isCash?W.p_any_cash_b:W.p_any_win_b):null,nB=multi?W.lineups.filter(L=>String(L.key).startsWith("b")).length:0;
   $("#sum").innerHTML=`<div class="stat"><div class="k">${isCash?"Palkkarajalle":"Voittajan tasolle"}</div><div class="v">${pc1(pMain)}</div></div>
-    ${isCash?`<div class="stat"><div class="k">0,23 € voittajan tasolle</div><div class="v">${pc1(w.p_win)}</div></div>`
+    ${isB&&nB>1&&bAny!=null?`<div class="stat"><div class="k">Vähintään yksi 5,75 € ${isCash?"palkoille":"voittajan tasolle"}</div><div class="v">${pc1(bAny)}</div></div>`
+      :isCash?`<div class="stat"><div class="k">0,23 € voittajan tasolle</div><div class="v">${pc1(w.p_win)}</div></div>`
       :multi&&W.p_any!=null?`<div class="stat"><div class="k">Vähintään yksi 0,23 € osuu</div><div class="v">${pc1(W.p_any)}</div></div>`:`<div class="stat"><div class="k">Palkkarajalle</div><div class="v">${pc1(w.p_cash)}</div></div>`}
     <div class="stat"><div class="k">Odotus</div><div class="v">${f1(w.mean)}</div></div>
     ${S.ownPred?`<div class="stat"><div class="k">Omistus* yhteensä</div><div class="v">${Math.round(ps.reduce((s,p)=>s+(isCash?(p.po5||0):(p.po||0)),0))} %</div></div>`:`<div class="stat"><div class="k">Hinta</div><div class="v">${f1(price)}</div></div>`}`;
   const tc={};ps.forEach(p=>tc[p.club]=(tc[p.club]||0)+1);
   const all=multi?W.lineups:[w];
-  const row=(lab,r,b)=>`<tr><td class="l">${b?"<b>"+esc(lab)+"</b>":esc(lab)}</td><td class="num">${f1(r.mean)}</td><td class="num">${f1(r.p90)}</td><td class="num">${pc1(r.p_win)}</td><td class="num">${pc1(r.p_cash)}</td>${multi?`<td class="num">${pc1(r.p_cash_b)}</td>`:""}</tr>`;
+  const hasWB=multi&&W.lineups.some(L=>L.p_win_b!=null);
+  const row=(lab,r,b)=>`<tr><td class="l">${b?"<b>"+esc(lab)+"</b>":esc(lab)}</td><td class="num">${f1(r.mean)}</td><td class="num">${f1(r.p90)}</td><td class="num">${pc1(r.p_win)}</td><td class="num">${pc1(r.p_cash)}</td>${hasWB?`<td class="num">${pc1(r.p_win_b)}</td>`:""}${multi?`<td class="num">${pc1(r.p_cash_b)}</td>`:""}</tr>`;
   const upd=W.updated?W.updated.replace("T"," klo "):"";
   $("#teamsBox").hidden=false;
   $("#teamsBox").innerHTML=`<div class="row" style="justify-content:space-between"><h3>Kokoonpanot verrattuna parhaaseen odotukseen</h3><span class="muted">${Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>esc(t)+" "+n).join(" · ")}</span></div>
-   <div class="tw"><table><thead><tr><th class="l"></th><th>Odotus</th><th>Paras 10&nbsp;%</th><th>${multi?"0,23 voitto":"Voittajan tasolle"}</th><th>${multi?"0,23 palkat":"Palkkarajalle"}</th>${multi?"<th>5,75 palkat</th>":""}</tr></thead><tbody>${all.map(L=>row(L.label,L,L.key===w.key)).join("")}${row("Paras odotus",o)}</tbody></table></div>
-   <p class="muted" style="margin:0">Paras 10 % = pisteet, jotka ylittyvät joka kymmenentenä iltana. ${multi?`Tasot: 0,23 € voittaja noin ${f1(W.target)}, palkkaraja ${f1(W.cash_a)}; 5,75 € palkkaraja noin ${f1(W.cash_b)} pistettä.`:`Voittajan taso noin ${f1(W.target)} pistettä.`} Merkintä ero = pelaaja ei ole parhaan odotuksen kokoonpanossa.</p>`;
+   <div class="tw"><table><thead><tr><th class="l"></th><th>Odotus</th><th>Paras 10&nbsp;%</th><th>${multi?"0,23 voitto":"Voittajan tasolle"}</th><th>${multi?"0,23 palkat":"Palkkarajalle"}</th>${hasWB?"<th>5,75 voitto</th>":""}${multi?"<th>5,75 palkat</th>":""}</tr></thead><tbody>${all.map(L=>row(L.label,L,L.key===w.key)).join("")}${row("Paras odotus",o)}</tbody></table></div>
+   <p class="muted" style="margin:0">Paras 10 % = pisteet, jotka ylittyvät joka kymmenentenä iltana. ${multi?`Tasot: 0,23 € voittaja noin ${f1(W.target)}, palkkaraja ${f1(W.cash_a)}; 5,75 € ${W.win_b!=null?`voittaja noin ${f1(W.win_b)}, `:""}palkkaraja noin ${f1(W.cash_b)} pistettä.`:`Voittajan taso noin ${f1(W.target)} pistettä.`} Merkintä ero = pelaaja ei ole parhaan odotuksen kokoonpanossa.</p>`;
   $("#alts").innerHTML="";
-  const how=multi?(isCash?`valittu kokoonpano ylittää ${eur(w.contest)} kisan palkkarajan useimmin`:`0,23 € kisan kokoonpanot on valittu yhdessä: ne yltävät voittajan tasolle eri iltoina, jolloin vähintään yksi osuu mahdollisimman usein`)
+  const how=multi?(isB?(isCash?(W.lineups.filter(L=>String(L.key).startsWith("b")&&L.goal==="cash").length>1?`${eur(w.contest)} kisan palkkarajan kokoonpanot ylittävät rajan kumpikin mahdollisimman usein, mutta niissä on eri pelaajia (enintään 5 samaa), jotta yksi huono ottelu ei kaada kaikkia`:`valittu kokoonpano ylittää ${eur(w.contest)} kisan palkkarajan useimmin`)
+      :`voittoon tähtäävä ${eur(w.contest)} kokoonpano on valittu niin, että vähintään yksi kisan kokoonpanoista yltää voittajan tasolle mahdollisimman usein`)
+    :`0,23 € kisan kokoonpanot on valittu yhdessä: ne yltävät voittajan tasolle eri iltoina, jolloin vähintään yksi osuu mahdollisimman usein`)
     :`valittu kokoonpano yltää useimmin kisan voittajan tasolle (${eur(W.contest)} kisa)`;
   $("#solveNote").textContent=`Laskettu mallin ajossa ${upd} budjetilla ${W.budget}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}: ilta simuloitu 10 000 kertaa, ja ${how}. ${W.basis==="katto"?" Tasot on arvioitu illan katosta (paras jälkikäteen mahdollinen kokoonpano) kaikista kirjatuista illoista.":""} Sivun budjetti, lukitukset ja poistot eivät muuta näitä kokoonpanoja.`;
 }
@@ -697,11 +703,13 @@ function renderTrack(){const t=S.track;$("#trackEmpty").hidden=!!t;$("#trackBody
     ${(g.comps||[]).map(c=>`<dt>${esc(c.lab)}</dt><dd>${f2(c.exp)} / ${f2(c.act)}</dd>`).join("")}</dl>
     <p class="muted" style="margin:6px 0 0">${t.play?`Kenttäpelaajien pelaaminen: ennustettu ${pct(t.play.pred)}, toteutui ${pct(t.play.act)}.`:""}</p>`:'<span class="muted">Ei maalivahtidataa.</span>';
   const pill=(v,c,lab)=>v==null?"":`<span class="pill${v>=c?" good":""}">${lab} ${v>=c?"palkoilla":"ei"}</span>`;
-  const KL={a2:"0,23 · 2",a3:"0,23 · 3",b:"5,75"};
+  const KL={a2:"0,23 · 2",a3:"0,23 · 3",b:"5,75",b2:"5,75 · 2",b3:"5,75 · 3",bw:"5,75 · V",bw2:"5,75 · V2"};
+  const isBk=k=>String(k||"").startsWith("b");
   $("#trackLineups").innerHTML=`<thead><tr><th class="l">Ilta</th><th>Paras odotus</th><th>Toteuma</th><th>Voittokokoonpano</th><th>Toteuma</th><th class="l">Muut kokoonpanot (toteuma)</th><th class="l">Palkkaraja / voittaja</th></tr></thead><tbody>${(t.lineups||[]).slice().reverse().map(r=>{
-    const w=r.win||null,more=r.more||[],b=more.find(m=>m.key==="b");
-    const cuts=(r.cuts||[]).map(c=>{const is5=Number(c.contest)>1;const mine=is5&&b?pill(b.act,c.cutline,"5,75"):(w?pill(w.act,c.cutline,"V"):"");
-      const extra=!is5?more.filter(m=>m.key!=="b").map(m=>" "+pill(m.act,c.cutline,KL[m.key]||m.key)).join(""):"";
+    const w=r.win||null,more0=r.more||[],bs=more0.filter(m=>isBk(m.key));
+    const more=more0.map(m=>m.key==="b"&&bs.length>1?Object.assign({},m,{key:"b1"}):m);KL.b1="5,75 · 1";
+    const cuts=(r.cuts||[]).map(c=>{const is5=Number(c.contest)>1;const mine=is5&&bs.length?more.filter(m=>isBk(m.key)).map(m=>pill(m.act,c.cutline,KL[m.key]||m.key)).join(" "):(w?pill(w.act,c.cutline,"V"):"");
+      const extra=!is5?more.filter(m=>!isBk(m.key)).map(m=>" "+pill(m.act,c.cutline,KL[m.key]||m.key)).join(""):"";
       return `${esc(c.contest)} €: ${f1(c.cutline)}${c.winner!=null?" / "+f1(c.winner):""} ${pill(r.act,c.cutline,"O")} ${mine}${extra}`}).join("<br>");
     const title=`Paras odotus: ${(r.players||[]).join(", ")}${w?"\nVoittokokoonpano: "+(w.players||[]).join(", "):""}${more.map(m=>"\n"+(KL[m.key]||m.key)+": "+(m.players||[]).join(", ")).join("")}`;
     return `<tr title="${esc(title)}"><td class="l">${esc(r.date)}${r.slate?` <span class="muted">${r.slate==="yo"?"yö":esc(r.slate)}</span>`:""}</td><td class="num">${f1(r.exp)}</td><td class="num">${r.act!=null?f1(r.act):"–"}</td><td class="num">${w?f1(w.exp):"–"}</td><td class="num">${w&&w.act!=null?f1(w.act):"–"}</td><td class="l">${more.length?more.map(m=>`${esc(KL[m.key]||m.key)}: ${m.act!=null?f1(m.act):"–"}`).join(" · "):'<span class="muted">–</span>'}</td><td class="l">${cuts||'<span class="muted">–</span>'}</td></tr>`}).join("")}</tbody>`;
