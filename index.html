@@ -313,7 +313,13 @@ td.cell.has{background:var(--accent-soft)}
 (function(){
 "use strict";
 // ---------- tila ----------
-const RULES={G:[1,1],D:[2,3],F:[5,6],C:[2,3],W:[3,4],N:9};
+const RULES9={G:[1,1],D:[2,3],F:[5,6],C:[2,3],W:[3,4],N:9};
+let RULES=RULES9;
+// Pelipaikat mallin ajosta (rules.json tai 6 pelaajan dailyssa rules_6.json); puuttuessa 9 pelaajan säännöt
+function rulesFrom(ds){const s=ds&&ds.slots;if(!s)return RULES9;const r=k=>s[k]==null?null:(Array.isArray(s[k])?[+s[k][0],+s[k][1]]:[+s[k],+s[k]]);
+  const G=r("G")||[1,1],D=r("D"),C=r("C"),W=r("W");if(!D||!C||!W)return RULES9;
+  const F=r("F")||[C[0]+W[0],C[1]+W[1]],N=+(ds.size||(G[0]+D[0]+F[0]));return {G,D,F,C,W,N}}
+const rng=a=>a[0]===a[1]?String(a[0]):a[0]+"–"+a[1];
 const POSFI={G:"MV",D:"P",C:"KH",W:"LH"};
 const S={mode:"opt",win:null,ds:null,P:[],byId:{},games:[],locks:new Set(),excl:new Set(),sols:[],solIdx:0,odds:{},sortP:{k:"x",d:-1},sortB:{k:"mp",d:-1},sortG:{k:"x",d:-1},db:null,user:null,isOwner:false};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
@@ -389,6 +395,7 @@ function useDataset(ds){
   const bud=ds.budget??(ds.win&&ds.win.budget),mpt=ds.max_per_team!==undefined?ds.max_per_team:(ds.win?ds.win.max_per_team:undefined);
   if(bud&&ds.updated!==load("rulesFor",null)){$("#budget").value=bud;const mt=String(mpt||0);
     if([...$("#maxTeam").options].some(o=>o.value===mt))$("#maxTeam").value=mt;store("rulesFor",ds.updated)}
+  RULES=rulesFrom(ds);
   S.games=(ds.games||[]).map(r=>{const o={};ds.gfields.forEach((k,i)=>o[k]=r[i]);return o});
   const key="sel:"+ds.date;const sel=load(key,{l:[],e:[]});
   S.locks=new Set(sel.l.filter(id=>S.byId[id]));S.excl=new Set(sel.e.filter(id=>S.byId[id]));
@@ -510,7 +517,7 @@ function tokenHTML(p,isNew,lab){const warn=p.pos!=="G"&&p.av<0.9?'<span class="f
   <div class="bt"><span class="xp">${f1(p.x)}</span><span class="pr">${f1(p.price)}</span></div></button>`}
 function renderLineup(){
   const r=RULES,capv=+$("#maxTeam").value;
-  $("#luRules").textContent=`1 MV · 2–3 P · 5–6 H (2–3 KH, 3–4 LH, yhteensä 9)${capv?` · max ${capv}/joukkue`:""}${$("#gRule").checked?" · MV ei omia vastaan":""}`;
+  $("#luRules").textContent=`${rng(r.G)} MV · ${rng(r.D)} P · ${rng(r.F)} H (${rng(r.C)} KH, ${rng(r.W)} LH, yhteensä ${r.N})${capv?` · max ${capv}/joukkue`:""}${$("#gRule").checked?" · MV ei omia vastaan":""}`;
   // lukitut
   const lc=[...S.locks].map(id=>S.byId[id]).filter(Boolean),ex=[...S.excl].map(id=>S.byId[id]).filter(Boolean);
   $("#lockChips").innerHTML=(lc.length||ex.length)?lc.map(p=>`<span class="pill acc">Lukittu: ${esc(p.name)} <button class="btn small" data-unlock="${p.id}" aria-label="Poista lukitus">×</button></span>`).join("")+ex.map(p=>`<span class="pill bad">Pois: ${esc(p.name)} <button class="btn small" data-unexcl="${p.id}" aria-label="Palauta">×</button></span>`).join("")+' <button class="btn small" data-act="clearsel">Tyhjennä</button>':'<span class="muted">Ei yhtään. Lukitse tai poista pelaajia Pelaajat-välilehdellä.</span>';
