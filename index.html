@@ -7,143 +7,220 @@
 <title>NHL Pistekone</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700&family=Saira:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..600;1,6..96,400..600&family=Manrope:wght@400;500;600&display=swap">
 <style>
-/* Layout: rink-side bench card — sticky game-night strip, the lineup drawn on a half rink, scouting tables below each tab. */
+/* Pistekone — night-session edition. One idea carries the page: Didone numerals (Bodoni Moda) set large and light
+   against a blue-black arena, champagne gold reserved for "the thing you are playing for". Everything else stays
+   quiet: ivory text, hairline rules instead of boxes, Manrope for every label and table. */
 :root{
-  --bg:#E4EAEF; --surface:#FFFFFF; --sunk:#EDF2F5; --ink:#14202B; --muted:#596876; --line:#D0DAE2;
-  --ice:#F4F8FA; --ice-edge:#BBCAD4; --crease:#CFE3F3; --blue:#2152A3; --red:#C23B3B;
-  --accent:#2152A3; --accent-ink:#FFFFFF; --accent-soft:#DCE6F5; --bar:#D6E2F2;
-  --tok:#FFFFFF; --tok-ink:#14202B; --tok-mut:#596876;
-  --good:#1D7A4C; --warn:#A86A12; --bad:#B23B3B; --good-soft:#DCF0E4; --warn-soft:#F6EAD3; --bad-soft:#F7E0DE;
-  --f-display:"Saira Condensed","Arial Narrow",Arial,sans-serif;
-  --f-body:"Saira",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
-  --r:8px;
+  --night:#0A121C; --deck:#0F1925; --raise:#15212F; --rule:#223142; --rule-2:#2C3D51;
+  --ink:#ECE6D8; --ink-2:#B9B3A6; --muted:#7F8C9B;
+  --gold:#C9A76A; --gold-ink:#1A1408; --gold-soft:rgba(201,167,106,.14);
+  --ice:#8FBAD8; --ice-soft:rgba(143,186,216,.14);
+  --good:#7CCB9C; --warn:#D9B061; --bad:#E2827A; --good-soft:rgba(124,203,156,.13); --warn-soft:rgba(217,176,97,.14); --bad-soft:rgba(226,130,122,.14);
+  /* vanhat nimet, joita sivun skripti ja SVG käyttävät */
+  --bg:var(--night); --surface:var(--deck); --sunk:var(--raise); --line:var(--rule); --accent:var(--gold); --accent-ink:var(--gold-ink);
+  --accent-soft:var(--gold-soft); --bar:rgba(143,186,216,.22);
+  --ice-face:#16222F; --ice-edge:#2E4053; --crease:rgba(143,186,216,.22); --blue:#5E86AE; --red:#B5605A;
+  --tok:#1A2735; --tok-ink:var(--ink); --tok-mut:var(--muted);
+  --f-display:"Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"Manrope",system-ui,sans-serif;
+  --r:3px; color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1A25; --surface:#142434; --sunk:#1A2D3F; --ink:#E5ECF2; --muted:#93A4B3; --line:#25394B;
-  --ice:#D3DFE6; --ice-edge:#8FA6B6; --crease:#A9C8E2; --blue:#2A5FB8; --red:#B8363A;
-  --accent:#7FA8FF; --accent-ink:#0E1A25; --accent-soft:#1F3656; --bar:#22406A;
-  --tok:#F7FAFC; --tok-ink:#14202B; --tok-mut:#55636F;
-  --good:#5FD39A; --warn:#E3A84A; --bad:#FF8A80; --good-soft:#163527; --warn-soft:#382B15; --bad-soft:#3A1E1C; color-scheme:dark }}
-:root[data-theme="dark"]{
-  --bg:#0E1A25; --surface:#142434; --sunk:#1A2D3F; --ink:#E5ECF2; --muted:#93A4B3; --line:#25394B;
-  --ice:#D3DFE6; --ice-edge:#8FA6B6; --crease:#A9C8E2; --blue:#2A5FB8; --red:#B8363A;
-  --accent:#7FA8FF; --accent-ink:#0E1A25; --accent-soft:#1F3656; --bar:#22406A;
-  --tok:#F7FAFC; --tok-ink:#14202B; --tok-mut:#55636F;
-  --good:#5FD39A; --warn:#E3A84A; --bad:#FF8A80; --good-soft:#163527; --warn-soft:#382B15; --bad-soft:#3A1E1C; color-scheme:dark }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:14px;line-height:1.45}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
-.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-header.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
-.strip-in{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-block:10px}
-.brand{font-family:var(--f-display);font-weight:700;font-size:27px;line-height:1}
-.brand small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--muted);margin-top:3px}
-.night{display:flex;align-items:baseline;gap:8px;padding:6px 11px;border-radius:var(--r);background:var(--accent);color:var(--accent-ink)}
-.night b{font-family:var(--f-display);font-size:22px;line-height:1}
-.night span{font-size:12px;opacity:.9}
-nav.tabs{display:flex;gap:2px;margin-left:auto;overflow-x:auto;max-width:100%}
-nav.tabs button{font:600 14px var(--f-body);background:none;border:0;color:var(--muted);padding:8px 12px;border-radius:var(--r);cursor:pointer;white-space:nowrap}
-nav.tabs button[aria-selected="true"]{color:var(--ink);background:var(--sunk)}
-button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-main{padding-block:18px 56px}
-h2{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0;line-height:1.1;text-wrap:balance}
-h3{font-family:var(--f-display);font-weight:600;font-size:18px;margin:0;line-height:1.2}
-.lede{color:var(--muted);max-width:70ch;margin:4px 0 0}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px}
-.stack{display:flex;flex-direction:column;gap:12px}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.grid2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;align-items:start}
-@media (max-width:900px){.grid2{grid-template-columns:minmax(0,1fr)}}
-.ctrls{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:flex-end}
-.ctrl{display:flex;flex-direction:column;gap:3px}
-.ctrl label{font-size:12px;font-weight:500;color:var(--muted)}
-input,select{font:14px var(--f-body);color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:7px 9px}
-input[type=number]{width:90px;font-family:var(--f-mono)}
-.btn{font:600 13px var(--f-body);border-radius:var(--r);border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 12px;cursor:pointer}
-.btn:hover{background:var(--sunk)}
-.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.small{padding:4px 9px;font-size:12px}
-.btn[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--ink)}
-.num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+html{background:var(--night)}
+body{margin:0;background:var(--night);color:var(--ink);font:400 14px/1.5 var(--f-body);font-variant-numeric:tabular-nums lining-nums;
+  -webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--night)}
+::selection{background:var(--gold);color:var(--gold-ink)}
+.wrap{max-width:1320px;margin:0 auto;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+
+/* yläpalkki */
+header.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(10,18,28,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+.strip-in{display:flex;align-items:center;gap:28px;flex-wrap:wrap;padding-block:14px}
+.brand{font:500 italic 26px/1 var(--f-display);letter-spacing:.005em;color:var(--ink)}
+.brand small{display:none}
+.night{display:flex;align-items:baseline;gap:10px;color:var(--ink-2)}
+.night b{font:500 15px/1 var(--f-body);color:var(--ink)}
+.night span{font-size:13px;color:var(--muted)}
+nav.tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto;max-width:100%}
+nav.tabs button{font:500 13.5px var(--f-body);background:none;border:0;color:var(--muted);padding:8px 12px;cursor:pointer;white-space:nowrap;
+  border-bottom:1px solid transparent;border-radius:0}
+nav.tabs button:hover{color:var(--ink)}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
+:focus-visible{outline:1.5px solid var(--gold);outline-offset:3px}
+main{padding-block:40px 96px}
+
+/* typografia */
+h1,h2,h3{font-family:var(--f-display);font-weight:500;margin:0;letter-spacing:-.005em;text-wrap:balance}
+h2{font-size:30px;line-height:1.1}
+h3{font-size:20px;line-height:1.2}
+.lede{color:var(--ink-2);max-width:72ch;margin:8px 0 0;line-height:1.6}
 .muted{color:var(--muted)}
-.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:1px 8px;border-radius:999px;background:var(--sunk);color:var(--muted);white-space:nowrap}
-.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--accent-soft);color:var(--accent)}
-.notice{border:1px dashed var(--accent);background:var(--accent-soft);border-radius:var(--r);padding:12px 14px}
-.empty{padding:28px 18px;text-align:center;color:var(--muted)}
+.num,.mono{font-family:var(--f-body);font-variant-numeric:tabular-nums}
+b,strong{font-weight:600}
+a{color:var(--gold)}
 
-/* rink */
-.rink{position:relative;background:var(--ice);border:3px solid var(--ice-edge);border-top-width:0;border-radius:0 0 110px 110px / 0 0 80px 80px;
-  display:grid;grid-template-rows:repeat(var(--rows,4),auto);row-gap:14px;padding:22px 10px 92px;min-height:480px;align-content:space-between}
-.rink svg{position:absolute;inset:0;width:100%;height:100%}
-.rrow{position:relative;display:flex;justify-content:center;gap:clamp(6px,1.6vw,12px)}
-.tok{width:clamp(96px,30%,162px);background:var(--tok);color:var(--tok-ink);border:1px solid var(--ice-edge);border-radius:7px;padding:7px 9px 8px;
-  box-shadow:0 2px 0 rgba(20,32,43,.13);position:relative;text-align:left;cursor:pointer;font:inherit}
-.tok .top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tok-mut)}
-.tok .ps{font:600 12px/1 var(--f-display);color:#fff;background:var(--blue);border-radius:4px;padding:3px 5px 2px}
-.tok.g .ps{background:var(--red)}
-.tok .nm{display:block;margin-top:4px;font:700 clamp(16px,2vw,19px)/1.05 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tok .op{display:block;font-size:12px;color:var(--tok-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tok .bt{display:flex;justify-content:space-between;align-items:baseline;margin-top:3px}
-.tok .xp{font:700 clamp(19px,2.4vw,24px)/1 var(--f-display);font-variant-numeric:tabular-nums}
-.tok .pr{font:500 12px/1 var(--f-mono);color:var(--tok-mut)}
-.tok .flag{position:absolute;top:-9px;left:8px;background:var(--warn);color:#14202B;font:600 11px/1 var(--f-body);padding:3px 6px;border-radius:4px}
-.tok .lock{position:absolute;top:-9px;right:8px;background:var(--blue);color:#fff;font:600 11px/1 var(--f-body);padding:3px 6px;border-radius:4px}
-.tok.new{border:2px solid var(--blue)}
-@media (max-width:480px){.rink{padding:14px 5px 80px;border-radius:0 0 64px 64px / 0 0 56px 56px;min-height:0}.tok{padding:6px 6px 7px}.tok .pr{display:none}}
-
-.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-@media (max-width:520px){.sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.stat{background:var(--sunk);border-radius:var(--r);padding:8px 10px}
-.stat .k{font-size:12px;color:var(--muted)}
-.stat .v{font:700 26px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
-.alt{border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;background:var(--surface);cursor:pointer;text-align:left;font:inherit;color:inherit}
-.alt[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
-.alt .mv{font-size:13px}.alt .out{color:var(--bad);text-decoration:line-through}.alt .in{color:var(--good);font-weight:600}
-.alt .gain{font:700 24px/1 var(--f-display);text-align:right}
-.alt .gain small{display:block;font:500 12px var(--f-body);color:var(--muted)}
+/* rakenne */
+.panel{background:var(--deck);border:1px solid var(--rule);border-radius:var(--r);padding:22px 24px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:960px){.grid2{grid-template-columns:minmax(0,1fr)}}
+.ctrls{display:flex;flex-wrap:wrap;gap:14px 22px;align-items:flex-end}
+.ctrl{display:flex;flex-direction:column;gap:5px}
+.ctrl label{font-size:12px;font-weight:500;color:var(--muted)}
+input,select{font:14px var(--f-body);color:var(--ink);background:var(--night);border:1px solid var(--rule-2);border-radius:var(--r);padding:8px 10px}
+input[type=number]{width:96px}
+input[type=checkbox]{accent-color:var(--gold)}
+select option{background:var(--deck)}
+.btn{font:500 13px var(--f-body);border-radius:var(--r);border:1px solid var(--rule-2);background:transparent;color:var(--ink);padding:8px 14px;cursor:pointer}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.btn.primary:hover{background:#D6B67C}
+.btn.small{padding:4px 10px;font-size:12px}
+.btn[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--raise);color:var(--ink-2);white-space:nowrap}
+.pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--gold-soft);color:var(--gold)}
+.notice{border:1px solid var(--rule-2);border-left:2px solid var(--gold);background:var(--deck);padding:14px 18px}
+.empty{padding:36px 20px;text-align:center;color:var(--muted)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.meter{height:9px;border-radius:5px;background:var(--line);overflow:hidden}
-.meter i{display:block;height:100%;background:var(--accent)}
+.meter{height:3px;background:var(--rule);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--gold)}
 
-/* tables */
-.tw{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+/* ===== illan kolme kokoonpanoa ===== */
+.hero{display:flex;flex-direction:column;gap:30px;margin-bottom:56px}
+.hero-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.hero-head h1{font-size:clamp(40px,4.4vw,58px);line-height:1;font-weight:400}
+.hero-head p{margin:12px 0 0;color:var(--ink-2);max-width:60ch}
+.hero-head .levels{display:flex;gap:36px}
+.lvl{display:flex;flex-direction:column;align-items:flex-end}
+.lvl b{font:400 34px/1 var(--f-display)}
+.lvl span{font-size:12.5px;color:var(--muted);margin-top:6px}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--rule)}
+@media (max-width:1000px){.trio{grid-template-columns:minmax(0,1fr)}}
+.lu{position:relative;padding:28px 28px 24px;cursor:pointer;display:flex;flex-direction:column;gap:18px;border-right:1px solid var(--rule);
+  outline-offset:-2px}
+.lu:last-child{border-right:0}
+.lu::before{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:transparent}
+.lu[aria-pressed="true"]::before{background:var(--gold)}
+.lu[aria-pressed="true"]{background:linear-gradient(180deg,rgba(201,167,106,.05),transparent 240px)}
+.lu:hover:not([aria-pressed="true"]){background:rgba(255,255,255,.015)}
+.lu-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.lu h2{font-size:30px;font-weight:500}
+.lu-top .goal{font-size:12.5px;color:var(--muted);text-align:right}
+.lu-big{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.lu-big .pts{font:400 76px/.86 var(--f-display);letter-spacing:-.02em}
+.lu-big .pts small{display:block;font:500 12.5px var(--f-body);letter-spacing:0;color:var(--muted);margin-top:12px}
+.probs{display:flex;flex-direction:column;gap:9px;min-width:150px}
+.pr-row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;font-size:12.5px;color:var(--muted)}
+.pr-row b{font:500 15px var(--f-body);color:var(--ink-2)}
+.pr-row .meter{grid-column:1/-1;background:var(--rule)}
+.pr-row .meter i{background:var(--ice)}
+.pr-row.on{color:var(--ink-2)} .pr-row.on b{color:var(--gold);font-size:17px} .pr-row.on .meter i{background:var(--gold)}
+.plist{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
+.plist li{display:grid;grid-template-columns:30px minmax(0,1fr) 40px 44px;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid rgba(34,49,66,.6)}
+.plist .ps{font-size:11px;font-weight:600;color:var(--muted)}
+.plist .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.plist .nm em{font-style:normal;color:var(--muted);font-weight:400;margin-left:6px;font-size:12.5px}
+.plist .xp{text-align:right;font-weight:600}
+.plist .pr{text-align:right;color:var(--muted);font-size:12.5px}
+.plist li.diff .nm::after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-left:7px;vertical-align:2px}
+.lu-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;font-size:12.5px;color:var(--muted)}
+.lu-foot b{color:var(--ink-2);font-weight:500}
+.together{display:flex;align-items:center;gap:40px;flex-wrap:wrap;padding:18px 0 0;border-top:1px solid var(--rule);color:var(--muted);font-size:13px}
+.together b{font:400 26px/1 var(--f-display);color:var(--ink);margin-right:8px;vertical-align:-3px}
+.together .sp{margin-left:auto}
+.custom-btn{background:none;border:0;color:var(--ink-2);font:500 13px var(--f-body);cursor:pointer;padding:6px 0;border-bottom:1px solid var(--rule-2)}
+.custom-btn:hover,.custom-btn[aria-pressed="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--rule)}
+
+/* kenttä */
+.rink{position:relative;background:var(--ice-face);border:1px solid var(--ice-edge);border-top:0;border-radius:0 0 120px 120px / 0 0 90px 90px;
+  display:grid;grid-template-rows:repeat(var(--rows,4),auto);row-gap:16px;padding:26px 12px 96px;min-height:500px;align-content:space-between}
+.rink svg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
+.rrow{position:relative;display:flex;justify-content:center;gap:clamp(8px,1.4vw,14px)}
+.tok{width:clamp(100px,30%,168px);background:var(--tok);color:var(--tok-ink);border:1px solid var(--rule-2);border-radius:var(--r);padding:9px 11px 10px;
+  position:relative;text-align:left;cursor:pointer;font:inherit}
+.tok:hover{border-color:var(--ink-2)}
+.tok .top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tok-mut)}
+.tok .ps{font:600 11px/1 var(--f-body);color:var(--muted)}
+.tok.g .ps{color:var(--gold)}
+.tok .nm{display:block;margin-top:5px;font:500 clamp(17px,1.7vw,20px)/1.1 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tok .op{display:block;font-size:11.5px;color:var(--tok-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tok .bt{display:flex;justify-content:space-between;align-items:baseline;margin-top:5px}
+.tok .xp{font:400 clamp(22px,2.2vw,27px)/1 var(--f-display)}
+.tok .pr{font:500 12px/1 var(--f-body);color:var(--tok-mut)}
+.tok .flag{position:absolute;top:-9px;left:9px;background:var(--warn);color:var(--gold-ink);font:600 10.5px/1 var(--f-body);padding:3px 6px;border-radius:2px}
+.tok .lock{position:absolute;top:-9px;right:9px;background:var(--gold);color:var(--gold-ink);font:600 10.5px/1 var(--f-body);padding:3px 6px;border-radius:2px}
+.tok.new{border-color:var(--gold)}
+@media (max-width:520px){.rink{padding:14px 5px 80px;border-radius:0 0 64px 64px / 0 0 56px 56px;min-height:0}.tok{padding:6px 6px 7px}.tok .pr{display:none}}
+
+/* tunnusluvut */
+.sum{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule)}
+@media (max-width:560px){.sum{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.stat{padding:14px 16px 14px 0}
+.stat+.stat{padding-left:16px;border-left:1px solid var(--rule)}
+.stat .k{font-size:12px;color:var(--muted)}
+.stat .v{font:400 30px/1.15 var(--f-display);margin-top:4px}
+.alt{border:1px solid var(--rule);border-radius:var(--r);padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;background:transparent;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.alt:hover{border-color:var(--rule-2)}
+.alt[aria-pressed="true"]{border-color:var(--gold)}
+.alt .mv{font-size:13px}.alt .out{color:var(--bad);text-decoration:line-through}.alt .in{color:var(--good);font-weight:600}
+.alt .gain{font:400 26px/1 var(--f-display);text-align:right}
+.alt .gain small{display:block;font:500 12px var(--f-body);color:var(--muted);margin-top:3px}
+
+/* taulukot */
+.tw{overflow-x:auto;border:1px solid var(--rule);border-radius:var(--r);background:var(--deck)}
 table{border-collapse:collapse;width:100%;font-size:13px}
-th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
-th{font-size:12px;font-weight:500;color:var(--muted);background:var(--sunk);position:sticky;top:0;cursor:pointer;user-select:none;z-index:1}
+th,td{padding:9px 11px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+th{font-size:12px;font-weight:500;color:var(--muted);background:var(--deck);position:sticky;top:0;cursor:pointer;user-select:none;z-index:1;
+  border-bottom:1px solid var(--rule-2)}
+th:hover{color:var(--ink)}
 th.l,td.l{text-align:left}
-tbody tr:hover{background:var(--sunk)}
-tbody tr.sel td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
-td.x{font:700 15px/1 var(--f-display);font-variant-numeric:tabular-nums;background:linear-gradient(90deg,var(--bar) var(--w,0%),transparent var(--w,0%))}
-.ps2{display:inline-block;min-width:30px;text-align:center;font:600 12px/1 var(--f-display);padding:4px 5px 3px;border-radius:4px;border:1px solid var(--line);color:var(--muted)}
-.pn{font-weight:600}
-.pc{display:block;font:600 14px/1.1 var(--f-display);font-variant-numeric:tabular-nums}
-.oc{display:block;font:400 11px var(--f-mono);color:var(--muted)}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+tbody tr:last-child td{border-bottom:0}
+tbody tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--gold)}
+td.x{font:500 15px/1 var(--f-body);background:linear-gradient(90deg,var(--bar) var(--w,0%),transparent var(--w,0%))}
+.ps2{display:inline-block;min-width:30px;text-align:center;font:600 11px/1 var(--f-body);padding:4px 5px 3px;border-radius:2px;border:1px solid var(--rule-2);color:var(--muted)}
+.pn{font-weight:500}
+.pc{display:block;font:500 14px/1.1 var(--f-body)}
+.oc{display:block;font:400 11px var(--f-body);color:var(--muted)}
 td.cell{cursor:pointer}
-td.cell.has{background:var(--accent-soft)}
-.edge{font:600 12px var(--f-mono)}.edge.pos{color:var(--good)}.edge.neg{color:var(--bad)}
-.gcard{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
-.game{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:8px}
-.score{font:700 30px/1 var(--f-display);font-variant-numeric:tabular-nums}
-.vs{display:flex;justify-content:space-between;align-items:baseline}
-.split{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--line)}
-.split i{display:block;height:100%}
-.kv{display:grid;grid-template-columns:1fr auto;gap:3px 12px;font-size:13px}
-.kv dt{color:var(--muted)}.kv dd{margin:0;font-family:var(--f-mono);text-align:right}
+td.cell.has{background:var(--gold-soft)}
+.edge{font:600 12px var(--f-body)}.edge.pos{color:var(--good)}.edge.neg{color:var(--bad)}
 
-.drawer{position:fixed;right:0;top:0;bottom:0;width:min(420px,100%);background:var(--surface);border-left:1px solid var(--line);z-index:20;overflow-y:auto;
-  padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 16px;box-shadow:-8px 0 30px rgba(0,0,0,.18)}
-.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:19}
-.bars{display:flex;flex-direction:column;gap:6px}
-.bars .b{display:grid;grid-template-columns:110px minmax(0,1fr) 52px;gap:8px;align-items:center;font-size:13px}
-.bars .b i{display:block;height:10px;border-radius:3px;background:var(--accent)}
+/* ottelut */
+.gcard{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0;border-top:1px solid var(--rule);border-left:1px solid var(--rule)}
+.game{background:transparent;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.score{font:400 36px/1 var(--f-display)}
+.vs{display:flex;justify-content:space-between;align-items:baseline}
+.split{display:flex;height:3px;overflow:hidden;background:var(--rule)}
+.split i{display:block;height:100%}
+.kv{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13px}
+.kv dt{color:var(--muted)}.kv dd{margin:0;text-align:right}
+
+/* sivupaneeli */
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(440px,100%);background:var(--deck);border-left:1px solid var(--rule-2);z-index:20;overflow-y:auto;
+  padding:calc(22px + env(safe-area-inset-top,0px)) max(22px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) 22px;box-shadow:-20px 0 60px rgba(0,0,0,.45)}
+.scrim{position:fixed;inset:0;background:rgba(3,7,12,.6);z-index:19}
+.bars{display:flex;flex-direction:column;gap:7px}
+.bars .b{display:grid;grid-template-columns:110px minmax(0,1fr) 52px;gap:10px;align-items:center;font-size:13px}
+.bars .b i{display:block;height:4px;background:var(--ice)}
 .bars .b i.neg{background:var(--bad)}
-.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:var(--r);z-index:30}
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--night);padding:10px 16px;border-radius:var(--r);z-index:30;font-weight:500}
 .oddsin{width:76px}
-@media (prefers-reduced-motion:no-preference){.tok{transition:transform .12s ease}.tok:hover{transform:translateY(-2px)}}
+@media (prefers-reduced-motion:no-preference){
+  .lu::before{transition:background .2s ease}
+  .hero .trio{animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+}
+#detailHead{scroll-margin-top:84px}
+@media (max-width:600px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .lu{padding:22px 2px}.lu-big .pts{font-size:64px}.hero-head .levels{gap:28px}}
 </style>
 </head>
 <body>
@@ -152,7 +229,7 @@ td.cell.has{background:var(--accent-soft)}
     <div class="brand">Pistekone<small>NHL päivittäisfantasy</small></div>
     <div class="night" id="night"><b>–</b><span>ei dataa</span></div>
     <nav class="tabs" role="tablist" aria-label="Näkymät">
-      <button role="tab" data-tab="lineup" aria-selected="true">Kokoonpano</button>
+      <button role="tab" data-tab="lineup" aria-selected="true">Kokoonpanot</button>
       <button role="tab" data-tab="players" aria-selected="false">Pelaajat</button>
       <button role="tab" data-tab="goalies" aria-selected="false">Maalivahdit</button>
       <button role="tab" data-tab="games" aria-selected="false">Ottelut</button>
@@ -175,7 +252,9 @@ td.cell.has{background:var(--accent-soft)}
 
   <!-- KOKOONPANO -->
   <section id="tab-lineup" class="stack">
-    <div class="panel ctrls">
+    <section class="hero" id="hero" hidden aria-label="Illan kolme 5,75 €:n kokoonpanoa"></section>
+    <div class="sec-head" id="detailHead"><h2 id="luTitle">Paras kokoonpano</h2><span class="muted" id="luRules"></span></div>
+    <div class="panel ctrls" id="ctrlBox">
       <div class="ctrl"><label for="budget">Budjetti</label><input id="budget" type="number" step="0.1" min="0" value="107"></div>
       <div class="ctrl"><label for="maxTeam">Samasta joukkueesta enintään</label><select id="maxTeam"><option>2</option><option>3</option><option selected>4</option><option>5</option><option value="0">Ei rajaa</option></select></div>
       <div class="ctrl"><label for="gRule">Maalivahti</label><label class="row" style="gap:6px;font-weight:400;min-height:34px"><input id="gRule" type="checkbox" checked> Ei omia pelaajia vastaan</label></div>
@@ -184,7 +263,6 @@ td.cell.has{background:var(--accent-soft)}
     </div>
     <div class="grid2">
       <div class="stack">
-        <div class="row" style="justify-content:space-between"><h2 id="luTitle">Paras kokoonpano</h2><span class="muted" id="luRules"></span></div>
         <div class="row" id="modeBox" hidden role="group" aria-label="Kokoonpanon tavoite"></div>
         <div id="rink"></div>
       </div>
@@ -199,7 +277,7 @@ td.cell.has{background:var(--accent-soft)}
 
   <!-- PELAAJAT -->
   <section id="tab-players" class="stack" hidden>
-    <div><h2>Pelaajat</h2><p class="lede">Odotetut fantasypisteet tämän illan otteluun. Lukitse pelaaja kokoonpanoon tai poista hänet; optimoija laskee kokoonpanon heti uudelleen. Klikkaa nimeä nähdäksesi pisteiden erittelyn. Omistus* = ennuste siitä, kuinka moni 0,23 €:n kisan osallistuja valitsee pelaajan (ei vaikuta kokoonpanoihin).</p></div>
+    <div><h2>Pelaajat</h2><p class="lede">Odotetut fantasypisteet tämän illan otteluun. Lukitse pelaaja kokoonpanoon tai poista hänet; optimoija laskee kokoonpanon heti uudelleen. Klikkaa nimeä nähdäksesi pisteiden erittelyn. Omistus* = ennuste siitä, kuinka moni 5,75 €:n kisan osallistuja valitsee pelaajan (ei vaikuta kokoonpanoihin).</p></div>
     <div class="panel ctrls">
       <div class="ctrl"><label for="fPos">Pelipaikka</label><select id="fPos"><option value="">Kaikki kenttäpelaajat</option><option value="C">Keskushyökkääjät</option><option value="W">Laitahyökkääjät</option><option value="D">Puolustajat</option></select></div>
       <div class="ctrl"><label for="fTeam">Joukkue</label><select id="fTeam"><option value="">Kaikki</option></select></div>
@@ -324,7 +402,7 @@ const POSFI={G:"MV",D:"P",C:"KH",W:"LH"};
 const S={mode:"opt",win:null,ds:null,P:[],byId:{},games:[],locks:new Set(),excl:new Set(),sols:[],solIdx:0,odds:{},sortP:{k:"x",d:-1},sortB:{k:"mp",d:-1},sortG:{k:"x",d:-1},db:null,user:null,isOwner:false};
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const f1=v=>v==null||isNaN(v)?"–":(+v).toFixed(1), f2=v=>v==null||isNaN(v)?"–":(+v).toFixed(2);
+const f1=v=>v==null||isNaN(v)?"–":(+v).toFixed(1).replace(".",","), f2=v=>v==null||isNaN(v)?"–":(+v).toFixed(2).replace(".",",");
 const pct=v=>v==null||isNaN(v)?"–":Math.round(v*100)+" %";
 const fair=p=>p>1e-9?(1/p).toFixed(2):"–";
 function store(k,v){try{localStorage.setItem("pk:"+k,JSON.stringify(v))}catch(e){}}
@@ -387,10 +465,11 @@ function useDataset(ds){
     o.ppx=o.price>0?o.x/o.price:0;if(o.pos!=="G"&&o.games===1)for(const [k,,f] of PROPS)o["p_"+k]=f(o);return o});
   S.byId=Object.fromEntries(S.P.map(p=>[p.id,p]));
   const OP=ds.own&&ds.own.date===ds.date&&ds.own.pred?ds.own.pred:null;S.ownPred=!!OP;
-  S.P.forEach(p=>{const v=OP&&OP[p.id];p.po=v?v[0]:undefined;p.po5=v?v[1]:undefined});
+  S.P.forEach(p=>{const v=OP&&OP[p.id];p.po=v?(v[1]??v[0]):undefined;p.po5=v?v[1]:undefined});
   const W=ds.win;S.win=W&&W.date===ds.date&&W.win&&W.win.players.every(id=>S.byId[id])?W:null;
   S.wlist=S.win?(W.lineups&&W.lineups.length?W.lineups:[Object.assign({key:"a1",label:"Voittokokoonpano",goal:"win",contest:W.contest,target:W.target},W.win)]).filter(L=>L.players.every(id=>S.byId[id])):[];
-  const sm=load("mode","opt");S.mode=S.wlist.some(L=>L.key===sm)?sm:(sm==="win"&&S.wlist.length?S.wlist[0].key:"opt");
+  {const bl=S.wlist.filter(L=>String(L.key||"").startsWith("b"));if(bl.length)S.wlist=bl}   // vain 5,75 €:n kokoonpanot
+  const sm=load("mode","");S.mode=S.wlist.some(L=>L.key===sm)||(sm==="opt"&&load("modeFor","")===ds.updated)?sm:(S.wlist.length?S.wlist[0].key:"opt");
   // uusi illan data: budjetti ja joukkueraja mallin ajosta (sen jälkeen omat muutokset pysyvät tähän dataan asti)
   const bud=ds.budget??(ds.win&&ds.win.budget),mpt=ds.max_per_team!==undefined?ds.max_per_team:(ds.win?ds.win.max_per_team:undefined);
   if(bud&&ds.updated!==load("rulesFor",null)){$("#budget").value=bud;const mt=String(mpt||0);
@@ -403,7 +482,7 @@ function useDataset(ds){
   const teams=[...new Set(S.P.map(p=>p.club))].sort();
   for(const id of ["#fTeam","#bTeam"]){const el=$(id);el.innerHTML='<option value="">Kaikki</option>'+teams.map(t=>`<option>${esc(t)}</option>`).join("")}
   const d=new Date(ds.date+"T12:00:00");
-  $("#night").innerHTML=`<b>${d.getDate()}.${d.getMonth()+1}.</b><span>${S.games.length||"?"} ottelua · ${S.P.length} pelaajaa</span>`;
+  $("#night").innerHTML=`<b>${d.getDate()}.${d.getMonth()+1}.</b><span>${S.games.length||"?"} ottelua, ${S.P.length} pelaajaa</span>`;
   $("#dataStamp").textContent=`Ottelupäivä ${d.getDate()}.${d.getMonth()+1}.${d.getFullYear()} (NHL:n aika). Mallin ajo ladattu ${ds.updated.replace("T"," klo ").replace(/-(\d\d)-(\d\d)/,(m,a,b)=>"-"+a+"-"+b)}. ${S.P.length} pelaajaa, ${S.games.length} ottelua.`;
   $("#noData").hidden=true;
   try{const today=new Intl.DateTimeFormat("en-CA",{timeZone:"America/New_York"}).format(new Date());const el=$("#staleNote");
@@ -521,15 +600,15 @@ function renderLineup(){
   // lukitut
   const lc=[...S.locks].map(id=>S.byId[id]).filter(Boolean),ex=[...S.excl].map(id=>S.byId[id]).filter(Boolean);
   $("#lockChips").innerHTML=(lc.length||ex.length)?lc.map(p=>`<span class="pill acc">Lukittu: ${esc(p.name)} <button class="btn small" data-unlock="${p.id}" aria-label="Poista lukitus">×</button></span>`).join("")+ex.map(p=>`<span class="pill bad">Pois: ${esc(p.name)} <button class="btn small" data-unexcl="${p.id}" aria-label="Palauta">×</button></span>`).join("")+' <button class="btn small" data-act="clearsel">Tyhjennä</button>':'<span class="muted">Ei yhtään. Lukitse tai poista pelaajia Pelaajat-välilehdellä.</span>';
+  renderHero();$("#ctrlBox").hidden=!!curWin();
   if(!S.ds){$("#rink").innerHTML='<div class="panel empty">Kokoonpano näkyy, kun illan data on ladattu.</div>';$("#sum").innerHTML="";$("#teamsBox").hidden=true;$("#alts").innerHTML="";$("#solveNote").textContent="";return}
-  $("#modeBox").hidden=!S.wlist.length;
-  $("#modeBox").innerHTML=[{key:"opt",label:"Paras odotus"},...S.wlist].map(L=>`<button class="btn small" data-mode="${esc(L.key)}" aria-pressed="${L.key===S.mode}">${esc(L.label)}</button>`).join("");
+  $("#modeBox").hidden=true;
   if(curWin()){renderWin();return}
   const info=S.solveInfo||{};
   if(!S.sols.length){$("#rink").innerHTML=`<div class="panel empty">${esc(info.err||"Sääntöjen mukaista kokoonpanoa ei löytynyt. Tarkista budjetti, joukkueraja ja lukitukset.")}</div>`;$("#sum").innerHTML="";$("#teamsBox").hidden=true;$("#alts").innerHTML="";$("#solveNote").textContent="";return}
   const best=S.sols[0],sol=S.sols[S.solIdx]||best,ids=new Set(sol.ids),bestIds=new Set(best.ids);
   const ps=sol.ids.map(id=>S.byId[id]);
-  $("#luTitle").textContent=S.solIdx===0?"Paras kokoonpano":`Vaihtoehto ${S.solIdx+1}`;
+  $("#luTitle").textContent=(S.wlist.length?"Oma kokoonpano":"Paras kokoonpano")+(S.solIdx===0?"":`: vaihtoehto ${S.solIdx+1}`);
   const rows=formation(ps);
   $("#rink").innerHTML=`<div class="rink" style="--rows:${rows.length}">${RINK}${rows.map(rw=>`<div class="rrow">${rw.map(p=>tokenHTML(p,S.solIdx>0&&!bestIds.has(p.id))).join("")}</div>`).join("")}</div>`;
   const price=ps.reduce((s,p)=>s+p.price,0),budget=+$("#budget").value;
@@ -588,39 +667,60 @@ document.addEventListener("click",e=>{const h=e.target.closest("[data-osort]");i
 // ---------- voittokokoonpano (lasketaan koneella simuloimalla, win.py) ----------
 function curWin(){return S.mode!=="opt"&&S.wlist?S.wlist.find(L=>L.key===S.mode)||null:null}
 function curIds(){const L=curWin();return L?L.players:(S.sols[S.solIdx]||{ids:[]}).ids}
-const pc1=v=>v==null||isNaN(v)?"–":(v*100).toFixed(1)+" %";
-function renderWin(){const W=S.win,w=curWin(),o=W.opt,optIds=new Set(o.players);
+const pc1=v=>v==null||isNaN(v)?"–":(v*100).toFixed(1).replace(".",",")+" %";
+// ---------- illan kolme 5,75 €:n kokoonpanoa (win.py: paras odotus, palkat, voitto) ----------
+function roleOf(L){const lab=String(L.label||"").toLowerCase(),n=(lab.match(/(palkat|voitto)\s*(\d)/)||[])[2]||"";
+  if(lab.includes("paras odotus"))return {name:"Paras odotus",goal:"cash",note:"Mallin suurin odotettu pistemäärä"};
+  if(L.goal==="win"||lab.includes("voitto"))return {name:"Voitto"+(n?" "+n:""),goal:"win",note:"Tähtää kisan voittajan tasolle"};
+  return {name:"Palkat"+(n?" "+n:""),goal:"cash",note:"Ylittää palkkarajan useimmin"}}
+const POSORD={G:0,D:1,C:2,W:3};
+const pc0=v=>v==null||isNaN(v)?"–":(v*100<10?(v*100).toFixed(1).replace(".",","):Math.round(v*100))+" %";
+const fiNum=v=>f1(v);
+function luPlayers(L){return L.players.map(id=>S.byId[id]).filter(Boolean).sort((a,b)=>POSORD[a.pos]-POSORD[b.pos]||b.x-a.x)}
+function nightLabel(){const W=S.win,d=new Date((S.ds.date||"")+"T12:00:00");if(isNaN(d))return "";
+  const wd=["Sunnuntai","Maanantai","Tiistai","Keskiviikko","Torstai","Perjantai","Lauantai"][d.getDay()];
+  const sl={ilta:"iltakierros",yo:"yökierros"}[W&&W.slate]||"";
+  return `${wd} ${d.getDate()}.${d.getMonth()+1}.${sl?" – "+sl:""}`}
+function renderHero(){const box=$("#hero");
+  if(!S.ds||!S.wlist.length||!S.win){box.hidden=true;box.innerHTML="";return}
+  const W=S.win,optIds=new Set((W.opt||{players:[]}).players),nPl=S.wlist[0].players.length;
+  const cols=S.wlist.map(L=>{const r=roleOf(L),ps=luPlayers(L),price=ps.reduce((s,p)=>s+p.price,0),on=L.key===S.mode;
+    const pc=L.p_cash_b,pw=L.p_win_b!=null?L.p_win_b:L.p_win;
+    const prow=(lab,v,act)=>`<div class="pr-row${act?" on":""}"><span>${lab}</span><b>${pc0(v)}</b><div class="meter"><i style="width:${Math.min(100,(v||0)*100).toFixed(1)}%"></i></div></div>`;
+    return `<article class="lu" data-mode="${esc(L.key)}" data-jump="1" role="button" tabindex="0" aria-pressed="${on}" aria-label="${esc(r.name)}: odotus ${fiNum(L.mean)} pistettä">
+      <div class="lu-top"><h2>${esc(r.name)}</h2><span class="goal">${esc(r.note)}</span></div>
+      <div class="lu-big"><div class="pts">${fiNum(L.mean)}<small>odotetut pisteet</small></div>
+        <div class="probs">${prow("Palkoille",pc,r.goal==="cash")}${prow("Voittajan tasolle",pw,r.goal==="win")}</div></div>
+      <ol class="plist">${ps.map(p=>`<li class="${optIds.size&&!optIds.has(p.id)?"diff":""}"><span class="ps">${POSFI[p.pos]}</span><span class="nm">${esc(p.name)}<em>${esc(p.club)}</em></span><span class="xp">${fiNum(p.x)}</span><span class="pr">${fiNum(p.price)}</span></li>`).join("")}</ol>
+      <div class="lu-foot"><span>Hinta <b>${fiNum(price)}</b> / ${fiNum(W.budget)}</span><button class="btn small" data-copy="${esc(L.key)}">Kopioi nimet</button></div>
+    </article>`}).join("");
+  const lv=[W.cash_b!=null?`<div class="lvl"><b>${Math.round(W.cash_b)}</b><span>palkkaraja noin</span></div>`:"",W.win_b!=null?`<div class="lvl"><b>${Math.round(W.win_b)}</b><span>voittaja noin</span></div>`:""].join("");
+  const any=W.p_any_cash_b!=null?`<span><b>${pc0(W.p_any_cash_b)}</b>vähintään yksi palkoille</span>`:"";
+  const anyW=W.p_any_win_b!=null?`<span><b>${pc0(W.p_any_win_b)}</b>vähintään yksi voittajan tasolle</span>`:"";
+  box.innerHTML=`<div class="hero-head"><div><h1>Illan kokoonpanot</h1><p>${esc(nightLabel())}. Kolme kokoonpanoa 5,75 €:n kisaan, ${nPl} pelaajaa, budjetti ${fiNum(W.budget)}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}. Kultainen piste merkitsee pelaajaa, joka ei ole parhaassa odotuksessa.</p></div><div class="levels">${lv}</div></div>
+    <div class="trio">${cols}</div>
+    <div class="together">${any}${anyW}<span class="sp"><button class="custom-btn" data-mode="opt" data-jump="1" aria-pressed="${S.mode==="opt"}">Tee oma kokoonpano lukituksilla</button></span></div>`;
+  box.hidden=false}
+function copyNames(key){const L=S.wlist.find(x=>x.key===key);if(!L)return;const txt=luPlayers(L).map(p=>p.name).join("\n");
+  const ok=()=>toast(`${roleOf(L).name}: nimet kopioitu`),fail=()=>toast("Kopiointi ei onnistunut tässä selaimessa");
+  try{navigator.clipboard.writeText(txt).then(ok,fail)}catch(e){fail()}}
+function renderWin(){const W=S.win,w=curWin(),o=W.opt,optIds=new Set(o.players),r=roleOf(w);
   const ps=w.players.map(id=>S.byId[id]);
-  const multi=!!(W.lineups&&W.lineups.length),eur=c=>String(Number(c).toFixed(2)).replace(".",",")+" €";
-  const isCash=w.goal==="cash",isB=String(w.key||"").startsWith("b");
-  const sfx=String(w.label||"").includes("·")?w.label.split("·").pop().trim().replace(/^(palkat|voitto)\s*/,""):"";
-  $("#luTitle").textContent=multi?`${eur(w.contest)}: ${isCash?"palkkarajalle":"voittoon"}${sfx?` (${sfx})`:""}`:"Voittokokoonpano";
+  $("#luTitle").textContent=`Kentällä: ${r.name}`;
   const rows=formation(ps);
   $("#rink").innerHTML=`<div class="rink" style="--rows:${rows.length}">${RINK}${rows.map(rw=>`<div class="rrow">${rw.map(p=>tokenHTML(p,!optIds.has(p.id),"ero")).join("")}</div>`).join("")}</div>`;
-  const price=ps.reduce((s,p)=>s+p.price,0);
-  const pMain=isCash?w.p_cash_b:(isB&&w.p_win_b!=null?w.p_win_b:w.p_win);
-  const bAny=isB?(isCash?W.p_any_cash_b:W.p_any_win_b):null,nB=multi?W.lineups.filter(L=>String(L.key).startsWith("b")).length:0;
-  $("#sum").innerHTML=`<div class="stat"><div class="k">${isCash?"Palkkarajalle":"Voittajan tasolle"}</div><div class="v">${pc1(pMain)}</div></div>
-    ${isB&&nB>1&&bAny!=null?`<div class="stat"><div class="k">Vähintään yksi 5,75 € ${isCash?"palkoille":"voittajan tasolle"}</div><div class="v">${pc1(bAny)}</div></div>`
-      :isCash?`<div class="stat"><div class="k">0,23 € voittajan tasolle</div><div class="v">${pc1(w.p_win)}</div></div>`
-      :multi&&W.p_any!=null?`<div class="stat"><div class="k">Vähintään yksi 0,23 € osuu</div><div class="v">${pc1(W.p_any)}</div></div>`:`<div class="stat"><div class="k">Palkkarajalle</div><div class="v">${pc1(w.p_cash)}</div></div>`}
-    <div class="stat"><div class="k">Odotus</div><div class="v">${f1(w.mean)}</div></div>
-    ${S.ownPred?`<div class="stat"><div class="k">Omistus* yhteensä</div><div class="v">${Math.round(ps.reduce((s,p)=>s+(isCash?(p.po5||0):(p.po||0)),0))} %</div></div>`:`<div class="stat"><div class="k">Hinta</div><div class="v">${f1(price)}</div></div>`}`;
-  const tc={};ps.forEach(p=>tc[p.club]=(tc[p.club]||0)+1);
-  const all=multi?W.lineups:[w];
-  const hasWB=multi&&W.lineups.some(L=>L.p_win_b!=null);
-  const row=(lab,r,b)=>`<tr><td class="l">${b?"<b>"+esc(lab)+"</b>":esc(lab)}</td><td class="num">${f1(r.mean)}</td><td class="num">${f1(r.p90)}</td><td class="num">${pc1(r.p_win)}</td><td class="num">${pc1(r.p_cash)}</td>${hasWB?`<td class="num">${pc1(r.p_win_b)}</td>`:""}${multi?`<td class="num">${pc1(r.p_cash_b)}</td>`:""}</tr>`;
+  const price=ps.reduce((s,p)=>s+p.price,0),pw=w.p_win_b!=null?w.p_win_b:w.p_win;
+  $("#sum").innerHTML=`<div class="stat"><div class="k">Odotus</div><div class="v">${fiNum(w.mean)}</div></div>
+    <div class="stat"><div class="k">Palkkarajalle</div><div class="v">${pc1(w.p_cash_b)}</div></div>
+    <div class="stat"><div class="k">Voittajan tasolle</div><div class="v">${pc1(pw)}</div></div>
+    ${S.ownPred?`<div class="stat"><div class="k">Omistus* yhteensä</div><div class="v">${Math.round(ps.reduce((s,p)=>s+(p.po5??p.po??0),0))} %</div></div>`:`<div class="stat"><div class="k">Hinta</div><div class="v">${fiNum(price)}</div></div>`}`;
   const upd=W.updated?W.updated.replace("T"," klo "):"";
-  $("#teamsBox").hidden=false;
-  $("#teamsBox").innerHTML=`<div class="row" style="justify-content:space-between"><h3>Kokoonpanot verrattuna parhaaseen odotukseen</h3><span class="muted">${Object.entries(tc).sort((a,b)=>b[1]-a[1]).map(([t,n])=>esc(t)+" "+n).join(" · ")}</span></div>
-   <div class="tw"><table><thead><tr><th class="l"></th><th>Odotus</th><th>Paras 10&nbsp;%</th><th>${multi?"0,23 voitto":"Voittajan tasolle"}</th><th>${multi?"0,23 palkat":"Palkkarajalle"}</th>${hasWB?"<th>5,75 voitto</th>":""}${multi?"<th>5,75 palkat</th>":""}</tr></thead><tbody>${all.map(L=>row(L.label,L,L.key===w.key)).join("")}${row("Paras odotus",o)}</tbody></table></div>
-   <p class="muted" style="margin:0">Paras 10 % = pisteet, jotka ylittyvät joka kymmenentenä iltana. ${multi?`Tasot: 0,23 € voittaja noin ${f1(W.target)}, palkkaraja ${f1(W.cash_a)}; 5,75 € ${W.win_b!=null?`voittaja noin ${f1(W.win_b)}, `:""}palkkaraja noin ${f1(W.cash_b)} pistettä.`:`Voittajan taso noin ${f1(W.target)} pistettä.`} Merkintä ero = pelaaja ei ole parhaan odotuksen kokoonpanossa.</p>`;
+  $("#teamsBox").hidden=true;$("#teamsBox").innerHTML="";
   $("#alts").innerHTML="";
-  const how=multi?(isB?(isCash?(W.lineups.filter(L=>String(L.key).startsWith("b")&&L.goal==="cash").length>1?`${eur(w.contest)} kisan palkkarajan kokoonpanot ylittävät rajan kumpikin mahdollisimman usein, mutta niissä on eri pelaajia (enintään 5 samaa), jotta yksi huono ottelu ei kaada kaikkia`:`valittu kokoonpano ylittää ${eur(w.contest)} kisan palkkarajan useimmin`)
-      :`voittoon tähtäävä ${eur(w.contest)} kokoonpano on valittu niin, että vähintään yksi kisan kokoonpanoista yltää voittajan tasolle mahdollisimman usein`)
-    :`0,23 € kisan kokoonpanot on valittu yhdessä: ne yltävät voittajan tasolle eri iltoina, jolloin vähintään yksi osuu mahdollisimman usein`)
-    :`valittu kokoonpano yltää useimmin kisan voittajan tasolle (${eur(W.contest)} kisa)`;
-  $("#solveNote").textContent=`Laskettu mallin ajossa ${upd} budjetilla ${W.budget}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}: ilta simuloitu 10 000 kertaa, ja ${how}. ${W.basis==="katto"?" Tasot on arvioitu illan katosta (paras jälkikäteen mahdollinen kokoonpano) kaikista kirjatuista illoista.":""} Sivun budjetti, lukitukset ja poistot eivät muuta näitä kokoonpanoja.`;
+  const how=r.goal==="win"?"voittokokoonpano nostaa eniten todennäköisyyttä, että vähintään yksi kolmesta yltää voittajan tasolle"
+    :r.name==="Paras odotus"?"paras odotus on kokoonpano, jolla on suurin odotettu pistemäärä"
+    :"palkkakokoonpano ylittää palkkarajan mahdollisimman usein, ja siinä on eri maalivahti ja enintään viisi samaa pelaajaa kuin parhaassa odotuksessa";
+  $("#solveNote").textContent=`Laskettu mallin ajossa ${upd} budjetilla ${W.budget}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}: ilta simuloitu 10 000 kertaa, ja ${how}. Palkkaraja noin ${Math.round(W.cash_b)}${W.win_b!=null?` ja voittaja noin ${Math.round(W.win_b)}`:""} pistettä.${W.basis==="katto"?" Tasot on arvioitu kaikista kirjatuista illoista.":""} Oman kokoonpanon budjetti, lukitukset ja poistot eivät muuta näitä kolmea.`;
 }
 
 // ---------- piirto: taulukot ----------
@@ -752,14 +852,17 @@ let solveT;function resolve(){clearTimeout(solveT);solveT=setTimeout(()=>{solve(
 ["#budget","#maxTeam","#nAlt","#gRule"].forEach(s=>$(s).addEventListener("change",resolve));$("#budget").addEventListener("input",resolve);
 ["#fPos","#fTeam","#fPrice","#fSearch","#fAvail"].forEach(s=>$(s).addEventListener("input",renderPlayers));
 ["#bTeam","#bSearch","#bMin"].forEach(s=>$(s).addEventListener("input",renderBets));
-document.addEventListener("click",e=>{const t=e.target.closest("[data-mode],[data-sort],[data-lock],[data-excl],[data-unlock],[data-unexcl],[data-act],[data-sol],[data-pid],[data-detail],[data-go],[data-odds],[data-delodds]");if(!t)return;
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches&&e.target.matches(".lu[data-mode]")){e.preventDefault();e.target.click()}});
+document.addEventListener("click",e=>{const t=e.target.closest("[data-copy],[data-mode],[data-sort],[data-lock],[data-excl],[data-unlock],[data-unexcl],[data-act],[data-sol],[data-pid],[data-detail],[data-go],[data-odds],[data-delodds]");if(!t)return;
   if(t.dataset.sort){const map={P:"sortP",B:"sortB",G:"sortG"}[t.dataset.t];const s=S[map];if(s.k===t.dataset.sort)s.d*=-1;else{s.k=t.dataset.sort;s.d=["name","club","opp","role","pos"].includes(s.k)?1:-1}
     ({P:renderPlayers,B:renderBets,G:renderGoalies})[t.dataset.t]();return}
   if(t.dataset.lock){const id=+t.dataset.lock;S.excl.delete(id);S.locks.has(id)?S.locks.delete(id):S.locks.add(id);saveSel();resolve();if(!$("#drawer").hidden)openDetail(id);toast(S.locks.has(id)?"Lukittu kokoonpanoon":"Lukitus poistettu");return}
   if(t.dataset.excl){const id=+t.dataset.excl;S.locks.delete(id);S.excl.has(id)?S.excl.delete(id):S.excl.add(id);saveSel();resolve();if(!$("#drawer").hidden)openDetail(id);toast(S.excl.has(id)?"Poistettu valinnoista":"Palautettu valintoihin");return}
   if(t.dataset.unlock){S.locks.delete(+t.dataset.unlock);saveSel();resolve();return}
   if(t.dataset.unexcl){S.excl.delete(+t.dataset.unexcl);saveSel();resolve();return}
-  if(t.dataset.mode){S.mode=t.dataset.mode;store("mode",S.mode);renderLineup();renderPlayers();renderGoalies();return}
+  if(t.dataset.copy){copyNames(t.dataset.copy);return}
+  if(t.dataset.mode){S.mode=t.dataset.mode;store("mode",S.mode);if(S.ds)store("modeFor",S.ds.updated);renderLineup();renderPlayers();renderGoalies();
+    if(t.dataset.jump)$("#detailHead").scrollIntoView({behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"start"});return}
   if(t.dataset.sol){S.solIdx=+t.dataset.sol;renderLineup();renderPlayers();renderGoalies();return}
   if(t.dataset.pid){openDetail(+t.dataset.pid);return}
   if(t.dataset.detail){openDetail(+t.dataset.detail);return}
