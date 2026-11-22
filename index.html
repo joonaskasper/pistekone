@@ -7,26 +7,25 @@
 <title>NHL Pistekone</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..600;1,6..96,400..600&family=Manrope:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Public+Sans:wght@400;500;600;700&display=swap">
 <style>
-/* Pistekone — night-session edition. One idea carries the page: Didone numerals (Bodoni Moda) set large and light
-   against a blue-black arena, champagne gold reserved for "the thing you are playing for". Everything else stays
-   quiet: ivory text, hairline rules instead of boxes, Manrope for every label and table. */
+/* Pistekone, pelipaita-tyyli (valittu 22.11.2026, vaihtoehto A). Numerot ja otsikot kuin pelipaidassa tai
+   tulostaulussa: Big Shoulders Display, kapea ja raskas. Teksti Public Sans. Hiilenharmaa pohja, jäänvalkoinen
+   teksti, maalivalon punainen vain sille, mitä kokoonpano tavoittelee; jäänsininen muissa mittareissa. */
 :root{
-  --night:#0A121C; --deck:#0F1925; --raise:#15212F; --rule:#223142; --rule-2:#2C3D51;
-  --ink:#ECE6D8; --ink-2:#B9B3A6; --muted:#7F8C9B;
-  --gold:#C9A76A; --gold-ink:#1A1408; --gold-soft:rgba(201,167,106,.14);
-  --ice:#8FBAD8; --ice-soft:rgba(143,186,216,.14);
-  --good:#7CCB9C; --warn:#D9B061; --bad:#E2827A; --good-soft:rgba(124,203,156,.13); --warn-soft:rgba(217,176,97,.14); --bad-soft:rgba(226,130,122,.14);
-  /* vanhat nimet, joita sivun skripti ja SVG käyttävät */
-  --bg:var(--night); --surface:var(--deck); --sunk:var(--raise); --line:var(--rule); --accent:var(--gold); --accent-ink:var(--gold-ink);
-  --accent-soft:var(--gold-soft); --bar:rgba(143,186,216,.22);
-  --ice-face:#16222F; --ice-edge:#2E4053; --crease:rgba(143,186,216,.22); --blue:#5E86AE; --red:#B5605A;
-  --tok:#1A2735; --tok-ink:var(--ink); --tok-mut:var(--muted);
-  --f-display:"Bodoni Moda","Didot","Bodoni 72",Georgia,serif;
-  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-mono:"Manrope",system-ui,sans-serif;
-  --r:3px; color-scheme:dark;
+  --night:#17191C; --deck:#1F2226; --raise:#262A2F; --rule:#2C3036; --rule-2:#3A3F46;
+  --ink:#EEF1F3; --ink-2:#A9B1B9; --muted:#8B939C;
+  --goal:#E3402D; --goal-hi:#FF5A45; --goal-ink:#FFFFFF; --goal-soft:rgba(227,64,45,.16);
+  --ice:#9DB7C9; --ice-soft:rgba(157,183,201,.16);
+  --good:#7CCB9C; --warn:#E0B25C; --bad:#FF7B6B; --good-soft:rgba(124,203,156,.13); --warn-soft:rgba(224,178,92,.15); --bad-soft:rgba(255,123,107,.14);
+  --bg:var(--night); --surface:var(--deck); --sunk:var(--raise); --line:var(--rule); --accent:var(--goal); --accent-ink:var(--goal-ink);
+  --accent-soft:var(--goal-soft); --bar:rgba(157,183,201,.2);
+  --ice-face:#1C2024; --ice-edge:#3A3F46; --crease:rgba(157,183,201,.2); --blue:#5D7FA3; --red:#B4473C;
+  --tok:#252A30; --tok-ink:var(--ink); --tok-mut:var(--muted);
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"Public Sans",system-ui,sans-serif;
+  --r:2px; color-scheme:dark;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -34,13 +33,13 @@ html{background:var(--night)}
 body{margin:0;background:var(--night);color:var(--ink);font:400 14px/1.5 var(--f-body);font-variant-numeric:tabular-nums lining-nums;
   -webkit-font-smoothing:antialiased}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--night)}
-::selection{background:var(--gold);color:var(--gold-ink)}
+::selection{background:var(--goal);color:var(--goal-ink)}
 .wrap{max-width:1320px;margin:0 auto;padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
 
 /* yläpalkki */
-header.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(10,18,28,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+header.strip{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:rgba(23,25,28,.94);backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
 .strip-in{display:flex;align-items:center;gap:28px;flex-wrap:wrap;padding-block:14px}
-.brand{font:500 italic 26px/1 var(--f-display);letter-spacing:.005em;color:var(--ink)}
+.brand{font:800 30px/1 var(--f-display);letter-spacing:.01em;color:var(--ink)}
 .brand small{display:none}
 .night{display:flex;align-items:baseline;gap:10px;color:var(--ink-2)}
 .night b{font:500 15px/1 var(--f-body);color:var(--ink)}
@@ -49,19 +48,19 @@ nav.tabs{display:flex;gap:4px;margin-left:auto;overflow-x:auto;max-width:100%}
 nav.tabs button{font:500 13.5px var(--f-body);background:none;border:0;color:var(--muted);padding:8px 12px;cursor:pointer;white-space:nowrap;
   border-bottom:1px solid transparent;border-radius:0}
 nav.tabs button:hover{color:var(--ink)}
-nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--gold)}
-:focus-visible{outline:1.5px solid var(--gold);outline-offset:3px}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--goal)}
+:focus-visible{outline:1.5px solid var(--goal);outline-offset:3px}
 main{padding-block:40px 96px}
 
 /* typografia */
-h1,h2,h3{font-family:var(--f-display);font-weight:500;margin:0;letter-spacing:-.005em;text-wrap:balance}
-h2{font-size:30px;line-height:1.1}
-h3{font-size:20px;line-height:1.2}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;margin:0;letter-spacing:.005em;text-wrap:balance}
+h2{font-size:34px;line-height:1}
+h3{font-size:23px;line-height:1.1}
 .lede{color:var(--ink-2);max-width:72ch;margin:8px 0 0;line-height:1.6}
 .muted{color:var(--muted)}
 .num,.mono{font-family:var(--f-body);font-variant-numeric:tabular-nums}
 b,strong{font-weight:600}
-a{color:var(--gold)}
+a{color:var(--goal)}
 
 /* rakenne */
 .panel{background:var(--deck);border:1px solid var(--rule);border-radius:var(--r);padding:22px 24px}
@@ -74,68 +73,65 @@ a{color:var(--gold)}
 .ctrl label{font-size:12px;font-weight:500;color:var(--muted)}
 input,select{font:14px var(--f-body);color:var(--ink);background:var(--night);border:1px solid var(--rule-2);border-radius:var(--r);padding:8px 10px}
 input[type=number]{width:96px}
-input[type=checkbox]{accent-color:var(--gold)}
+input[type=checkbox]{accent-color:var(--goal)}
 select option{background:var(--deck)}
 .btn{font:500 13px var(--f-body);border-radius:var(--r);border:1px solid var(--rule-2);background:transparent;color:var(--ink);padding:8px 14px;cursor:pointer}
 .btn:hover{border-color:var(--ink-2)}
-.btn.primary{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
-.btn.primary:hover{background:#D6B67C}
+.btn.primary{background:var(--goal);color:var(--goal-ink);border-color:var(--goal)}
+.btn.primary:hover{background:var(--goal-hi)}
 .btn.small{padding:4px 10px;font-size:12px}
-.btn[aria-pressed="true"]{border-color:var(--gold);color:var(--gold)}
+.btn[aria-pressed="true"]{border-color:var(--goal);color:var(--goal)}
 .pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--raise);color:var(--ink-2);white-space:nowrap}
 .pill.good{background:var(--good-soft);color:var(--good)} .pill.warn{background:var(--warn-soft);color:var(--warn)}
-.pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--gold-soft);color:var(--gold)}
-.notice{border:1px solid var(--rule-2);border-left:2px solid var(--gold);background:var(--deck);padding:14px 18px}
+.pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.acc{background:var(--goal-soft);color:var(--goal)}
+.notice{border:1px solid var(--rule-2);border-left:2px solid var(--goal);background:var(--deck);padding:14px 18px}
 .empty{padding:36px 20px;text-align:center;color:var(--muted)}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .meter{height:3px;background:var(--rule);overflow:hidden}
-.meter i{display:block;height:100%;background:var(--gold)}
+.meter i{display:block;height:100%;background:var(--goal)}
 
 /* ===== illan kolme kokoonpanoa ===== */
 .hero{display:flex;flex-direction:column;gap:30px;margin-bottom:56px}
 .hero-head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
-.hero-head h1{font-size:clamp(40px,4.4vw,58px);line-height:1;font-weight:400}
+.hero-head h1{font-size:clamp(48px,5vw,68px);line-height:.95;font-weight:800}
 .hero-head p{margin:12px 0 0;color:var(--ink-2);max-width:60ch}
 .hero-head .levels{display:flex;gap:36px}
 .lvl{display:flex;flex-direction:column;align-items:flex-end}
-.lvl b{font:400 34px/1 var(--f-display)}
+.lvl b{font:700 44px/1 var(--f-display)}
 .lvl span{font-size:12.5px;color:var(--muted);margin-top:6px}
-.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--rule)}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
 @media (max-width:1000px){.trio{grid-template-columns:minmax(0,1fr)}}
-.lu{position:relative;padding:28px 28px 24px;cursor:pointer;display:flex;flex-direction:column;gap:18px;border-right:1px solid var(--rule);
-  outline-offset:-2px}
-.lu:last-child{border-right:0}
-.lu::before{content:"";position:absolute;left:0;right:0;top:-1px;height:2px;background:transparent}
-.lu[aria-pressed="true"]::before{background:var(--gold)}
-.lu[aria-pressed="true"]{background:linear-gradient(180deg,rgba(201,167,106,.05),transparent 240px)}
-.lu:hover:not([aria-pressed="true"]){background:rgba(255,255,255,.015)}
-.lu-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-.lu h2{font-size:30px;font-weight:500}
-.lu-top .goal{font-size:12.5px;color:var(--muted);text-align:right}
-.lu-big{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
-.lu-big .pts{font:400 76px/.86 var(--f-display);letter-spacing:-.02em}
+.lu{position:relative;padding:24px 24px 22px;cursor:pointer;display:flex;flex-direction:column;gap:16px;background:var(--deck);
+  border-top:4px solid var(--rule-2);outline-offset:2px}
+.lu[aria-pressed="true"]{border-top-color:var(--goal)}
+.lu:hover:not([aria-pressed="true"]){border-top-color:var(--muted)}
+.lu-top{display:flex;flex-direction:column;gap:4px}
+.lu h2{font-size:34px;font-weight:700}
+.lu-top .goal{font-size:13px;color:var(--muted)}
+.lu-big{display:flex;align-items:flex-end;justify-content:space-between;gap:14px 18px;flex-wrap:wrap}
+.lu-big .pts{font:800 clamp(72px,6.6vw,98px)/.8 var(--f-display);letter-spacing:0}
 .lu-big .pts small{display:block;font:500 12.5px var(--f-body);letter-spacing:0;color:var(--muted);margin-top:12px}
-.probs{display:flex;flex-direction:column;gap:9px;min-width:150px}
+.probs{display:flex;flex-direction:column;gap:9px;flex:1 1 140px;max-width:220px}
 .pr-row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline;font-size:12.5px;color:var(--muted)}
-.pr-row b{font:500 15px var(--f-body);color:var(--ink-2)}
-.pr-row .meter{grid-column:1/-1;background:var(--rule)}
+.pr-row b{font:700 19px var(--f-display);color:var(--ink)}
+.pr-row .meter{grid-column:1/-1;background:var(--rule-2);height:4px}
 .pr-row .meter i{background:var(--ice)}
-.pr-row.on{color:var(--ink-2)} .pr-row.on b{color:var(--gold);font-size:17px} .pr-row.on .meter i{background:var(--gold)}
-.plist{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule)}
-.plist li{display:grid;grid-template-columns:30px minmax(0,1fr) 40px 44px;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid rgba(34,49,66,.6)}
-.plist .ps{font-size:11px;font-weight:600;color:var(--muted)}
+.pr-row.on{color:var(--ink-2)} .pr-row.on b{color:var(--goal-hi);font-size:21px} .pr-row.on .meter i{background:var(--goal)}
+.plist{list-style:none;margin:0;padding:0;border-top:1px solid var(--rule-2)}
+.plist li{display:grid;grid-template-columns:30px minmax(0,1fr) 40px 44px;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--rule)}
+.plist .ps{font:700 13px var(--f-display);color:var(--muted)}
 .plist .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
 .plist .nm em{font-style:normal;color:var(--muted);font-weight:400;margin-left:6px;font-size:12.5px}
-.plist .xp{text-align:right;font-weight:600}
+.plist .xp{text-align:right;font:700 18px/1 var(--f-display)}
 .plist .pr{text-align:right;color:var(--muted);font-size:12.5px}
-.plist li.diff .nm::after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--gold);margin-left:7px;vertical-align:2px}
+.plist li.diff .nm::after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ice);margin-left:7px;vertical-align:2px}
 .lu-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:auto;font-size:12.5px;color:var(--muted)}
 .lu-foot b{color:var(--ink-2);font-weight:500}
-.together{display:flex;align-items:center;gap:40px;flex-wrap:wrap;padding:18px 0 0;border-top:1px solid var(--rule);color:var(--muted);font-size:13px}
-.together b{font:400 26px/1 var(--f-display);color:var(--ink);margin-right:8px;vertical-align:-3px}
+.together{display:flex;align-items:center;gap:40px;flex-wrap:wrap;padding:4px 0 0;color:var(--ink-2);font-size:14px}
+.together b{font:800 34px/1 var(--f-display);color:var(--ink);margin-right:8px;vertical-align:-4px}
 .together .sp{margin-left:auto}
 .custom-btn{background:none;border:0;color:var(--ink-2);font:500 13px var(--f-body);cursor:pointer;padding:6px 0;border-bottom:1px solid var(--rule-2)}
-.custom-btn:hover,.custom-btn[aria-pressed="true"]{color:var(--gold);border-bottom-color:var(--gold)}
+.custom-btn:hover,.custom-btn[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--goal)}
 .sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--rule)}
 
 /* kenttä */
@@ -147,16 +143,16 @@ select option{background:var(--deck)}
   position:relative;text-align:left;cursor:pointer;font:inherit}
 .tok:hover{border-color:var(--ink-2)}
 .tok .top{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--tok-mut)}
-.tok .ps{font:600 11px/1 var(--f-body);color:var(--muted)}
-.tok.g .ps{color:var(--gold)}
-.tok .nm{display:block;margin-top:5px;font:500 clamp(17px,1.7vw,20px)/1.1 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tok .ps{font:700 13px/1 var(--f-display);color:var(--muted)}
+.tok.g .ps{color:var(--goal-hi)}
+.tok .nm{display:block;margin-top:5px;font:700 clamp(19px,1.9vw,23px)/1.05 var(--f-display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tok .op{display:block;font-size:11.5px;color:var(--tok-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tok .bt{display:flex;justify-content:space-between;align-items:baseline;margin-top:5px}
-.tok .xp{font:400 clamp(22px,2.2vw,27px)/1 var(--f-display)}
+.tok .xp{font:800 clamp(26px,2.6vw,32px)/1 var(--f-display)}
 .tok .pr{font:500 12px/1 var(--f-body);color:var(--tok-mut)}
-.tok .flag{position:absolute;top:-9px;left:9px;background:var(--warn);color:var(--gold-ink);font:600 10.5px/1 var(--f-body);padding:3px 6px;border-radius:2px}
-.tok .lock{position:absolute;top:-9px;right:9px;background:var(--gold);color:var(--gold-ink);font:600 10.5px/1 var(--f-body);padding:3px 6px;border-radius:2px}
-.tok.new{border-color:var(--gold)}
+.tok .flag{position:absolute;top:-9px;left:9px;background:var(--warn);color:var(--goal-ink);font:600 10.5px/1 var(--f-body);padding:3px 6px;border-radius:2px}
+.tok .lock{position:absolute;top:-9px;right:9px;background:var(--goal);color:var(--goal-ink);font:600 10.5px/1 var(--f-body);padding:3px 6px;border-radius:2px}
+.tok.new{border-color:var(--goal)}
 @media (max-width:520px){.rink{padding:14px 5px 80px;border-radius:0 0 64px 64px / 0 0 56px 56px;min-height:0}.tok{padding:6px 6px 7px}.tok .pr{display:none}}
 
 /* tunnusluvut */
@@ -165,12 +161,12 @@ select option{background:var(--deck)}
 .stat{padding:14px 16px 14px 0}
 .stat+.stat{padding-left:16px;border-left:1px solid var(--rule)}
 .stat .k{font-size:12px;color:var(--muted)}
-.stat .v{font:400 30px/1.15 var(--f-display);margin-top:4px}
+.stat .v{font:800 38px/1.05 var(--f-display);margin-top:4px}
 .alt{border:1px solid var(--rule);border-radius:var(--r);padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:center;background:transparent;cursor:pointer;text-align:left;font:inherit;color:inherit}
 .alt:hover{border-color:var(--rule-2)}
-.alt[aria-pressed="true"]{border-color:var(--gold)}
+.alt[aria-pressed="true"]{border-color:var(--goal)}
 .alt .mv{font-size:13px}.alt .out{color:var(--bad);text-decoration:line-through}.alt .in{color:var(--good);font-weight:600}
-.alt .gain{font:400 26px/1 var(--f-display);text-align:right}
+.alt .gain{font:800 30px/1 var(--f-display);text-align:right}
 .alt .gain small{display:block;font:500 12px var(--f-body);color:var(--muted);margin-top:3px}
 
 /* taulukot */
@@ -183,20 +179,20 @@ th:hover{color:var(--ink)}
 th.l,td.l{text-align:left}
 tbody tr:hover{background:rgba(255,255,255,.025)}
 tbody tr:last-child td{border-bottom:0}
-tbody tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--gold)}
-td.x{font:500 15px/1 var(--f-body);background:linear-gradient(90deg,var(--bar) var(--w,0%),transparent var(--w,0%))}
+tbody tr.sel td:first-child{box-shadow:inset 2px 0 0 var(--goal)}
+td.x{font:700 17px/1 var(--f-display);background:linear-gradient(90deg,var(--bar) var(--w,0%),transparent var(--w,0%))}
 .ps2{display:inline-block;min-width:30px;text-align:center;font:600 11px/1 var(--f-body);padding:4px 5px 3px;border-radius:2px;border:1px solid var(--rule-2);color:var(--muted)}
 .pn{font-weight:500}
-.pc{display:block;font:500 14px/1.1 var(--f-body)}
+.pc{display:block;font:700 16px/1.1 var(--f-display)}
 .oc{display:block;font:400 11px var(--f-body);color:var(--muted)}
 td.cell{cursor:pointer}
-td.cell.has{background:var(--gold-soft)}
+td.cell.has{background:var(--goal-soft)}
 .edge{font:600 12px var(--f-body)}.edge.pos{color:var(--good)}.edge.neg{color:var(--bad)}
 
 /* ottelut */
 .gcard{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0;border-top:1px solid var(--rule);border-left:1px solid var(--rule)}
 .game{background:transparent;border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
-.score{font:400 36px/1 var(--f-display)}
+.score{font:800 42px/1 var(--f-display)}
 .vs{display:flex;justify-content:space-between;align-items:baseline}
 .split{display:flex;height:3px;overflow:hidden;background:var(--rule)}
 .split i{display:block;height:100%}
@@ -214,13 +210,13 @@ td.cell.has{background:var(--gold-soft)}
 .toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--night);padding:10px 16px;border-radius:var(--r);z-index:30;font-weight:500}
 .oddsin{width:76px}
 @media (prefers-reduced-motion:no-preference){
-  .lu::before{transition:background .2s ease}
+  .lu{transition:border-color .2s ease}
   .hero .trio{animation:rise .5s cubic-bezier(.2,.7,.2,1) both}
   @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 }
 #detailHead{scroll-margin-top:84px}
 @media (max-width:600px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-  .lu{padding:22px 2px}.lu-big .pts{font-size:64px}.hero-head .levels{gap:28px}}
+  .lu{padding:22px 2px}.lu-big .pts{font-size:80px}.hero-head .levels{gap:28px}}
 </style>
 </head>
 <body>
@@ -697,7 +693,7 @@ function renderHero(){const box=$("#hero");
   const lv=[W.cash_b!=null?`<div class="lvl"><b>${Math.round(W.cash_b)}</b><span>palkkaraja noin</span></div>`:"",W.win_b!=null?`<div class="lvl"><b>${Math.round(W.win_b)}</b><span>voittaja noin</span></div>`:""].join("");
   const any=W.p_any_cash_b!=null?`<span><b>${pc0(W.p_any_cash_b)}</b>vähintään yksi palkoille</span>`:"";
   const anyW=W.p_any_win_b!=null?`<span><b>${pc0(W.p_any_win_b)}</b>vähintään yksi voittajan tasolle</span>`:"";
-  box.innerHTML=`<div class="hero-head"><div><h1>Illan kokoonpanot</h1><p>${esc(nightLabel())}. Kolme kokoonpanoa 5,75 €:n kisaan, ${nPl} pelaajaa, budjetti ${fiNum(W.budget)}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}. Kultainen piste merkitsee pelaajaa, joka ei ole parhaassa odotuksessa.</p></div><div class="levels">${lv}</div></div>
+  box.innerHTML=`<div class="hero-head"><div><h1>Illan kokoonpanot</h1><p>${esc(nightLabel())}. Kolme kokoonpanoa 5,75 €:n kisaan, ${nPl} pelaajaa, budjetti ${fiNum(W.budget)}${W.max_per_team?`, enintään ${W.max_per_team} samasta joukkueesta`:""}. Sininen piste merkitsee pelaajaa, joka ei ole parhaassa odotuksessa.</p></div><div class="levels">${lv}</div></div>
     <div class="trio">${cols}</div>
     <div class="together">${any}${anyW}<span class="sp"><button class="custom-btn" data-mode="opt" data-jump="1" aria-pressed="${S.mode==="opt"}">Tee oma kokoonpano lukituksilla</button></span></div>`;
   box.hidden=false}
