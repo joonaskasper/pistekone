@@ -299,6 +299,7 @@ td.cell.has{background:var(--goal-soft)}
   <!-- VEDONLYÖNTI -->
   <section id="tab-bets" class="stack" hidden>
     <div><h2>Vedonlyönti</h2><p class="lede">Mallin todennäköisyys ja reilu kerroin (1 / todennäköisyys). Klikkaa solua ja syötä vedonvälittäjän kerroin, niin näet arvon (todennäköisyys × kerroin − 1). Pelaajien luvut olettavat, että pelaaja pelaa. Pinnacle on tarkka markkina: suuri ero siihen on useammin mallin virhe kuin etu. Tämä ei ole peliohje.</p></div>
+    <p class="muted" id="betSrc" style="margin:0"></p>
     <div class="panel stack" id="myOdds"></div>
     <h3>Ottelut</h3>
     <div class="tw"><table id="btGames"></table></div>
@@ -759,25 +760,37 @@ function renderGames(){
 }
 function oddsCell(key,p){const o=S.odds[key];const e=o?p*o-1:null;
   return `<td class="cell${o?" has":""}" data-odds="${esc(key)}" data-p="${p}" tabindex="0" title="Syötä kerroin"><span class="pc">${pct(p)}</span><span class="oc">${fair(p)}${o?` · ${o.toFixed(2)} <span class="edge ${e>0?"pos":"neg"}">${(e*100>0?"+":"")+(e*100).toFixed(0)}%</span>`:""}</span></td>`}
+function mapPlayers(F,rows){return rows.map(r=>{const o={};F.forEach((k,i)=>o[k]=r[i]);o.name=(o.fn+" "+o.ln).trim();o.pp=o.pp||0;o.av=o.av??1;o.x=o.x||0;
+    o.ppx=o.price>0?o.x/o.price:0;if(o.pos!=="G"&&o.games===1)for(const [k,,f] of PROPS)o["p_"+k]=f(o);return o})}
+function useBets(b){if(!b||!b.players||!b.fields)return;if(S.bets&&S.bets.updated===b.updated)return;const P=mapPlayers(b.fields,b.players);
+  S.bets={date:b.date,updated:b.updated,P,byId:Object.fromEntries(P.map(p=>[p.id,p])),games:(b.games||[]).map(r=>{const o={};b.gfields.forEach((k,i)=>o[k]=r[i]);return o})};
+  if(S.ds)renderBets()}
+function betSet(){const B=S.bets&&S.ds&&S.bets.date===S.ds.date?S.bets:null;
+  return B?{P:B.P,byId:B.byId,games:B.games.length?B.games:S.games,all:true,upd:B.updated}:{P:S.P,byId:S.byId,games:S.games,all:false}}
 function renderBets(){
   if(!S.ds){$("#btGames").innerHTML="";$("#btPlayers").innerHTML="";$("#myOdds").innerHTML='<span class="muted">Ei dataa.</span>';return}
+  const BS=betSet();
+  $("#betSrc").textContent=BS.all?`Pelaajat kaikista illan otteluista (run_betting.bat, päivitetty ${String(BS.upd||"").replace("T"," klo ")}).`
+    :"Pelaajat vain dailyn listalta. Kaikkien illan otteluiden pelaajat saat ajamalla run_betting.bat.";
+  {const el=$("#bTeam"),cur=el.value,teams=[...new Set(BS.P.map(p=>p.club))].sort();
+   if(el.options.length!==teams.length+1){el.innerHTML='<option value="">Kaikki</option>'+teams.map(t=>`<option>${esc(t)}</option>`).join("");el.value=teams.includes(cur)?cur:""}}
   // ottelut
   const gcols=[["m","Ottelu","l"],["g","Maalit (malli)"],["h","Koti"],["a","Vieras"],["o55","Yli 5.5"],["u55","Alle 5.5"],["o65","Yli 6.5"],["u65","Alle 6.5"],["mk","Markkina: koti"]];
-  $("#btGames").innerHTML="<thead><tr>"+gcols.map(([k,l,c])=>`<th class="${c||""}">${l}</th>`).join("")+"</tr></thead><tbody>"+S.games.map(g=>{const pm=gameProbs(g.lhm,g.lam),k=`${g.home}-${g.away}`;
+  $("#btGames").innerHTML="<thead><tr>"+gcols.map(([k,l,c])=>`<th class="${c||""}">${l}</th>`).join("")+"</tr></thead><tbody>"+BS.games.map(g=>{const pm=gameProbs(g.lhm,g.lam),k=`${g.home}-${g.away}`;
     const o55=overP(g.lhm,g.lam,5.5),o65=overP(g.lhm,g.lam,6.5);const mk=g.market?gameProbs(g.lh,g.la).home:null;
     return `<tr><td class="l pn">${esc(g.home)}–${esc(g.away)}</td><td class="num">${f2(g.lhm)}–${f2(g.lam)}</td>${oddsCell(k+"|koti",pm.home)}${oddsCell(k+"|vieras",pm.away)}${oddsCell(k+"|yli5.5",o55)}${oddsCell(k+"|alle5.5",1-o55)}${oddsCell(k+"|yli6.5",o65)}${oddsCell(k+"|alle6.5",1-o65)}
       <td class="num">${mk==null?"–":pct(mk)+` <span class="muted">(${((pm.home-mk)*100>0?"+":"")+Math.round((pm.home-mk)*100)})</span>`}</td></tr>`}).join("")+"</tbody>";
   // pelaajat
   const bt=$("#bTeam").value,q=$("#bSearch").value.toLowerCase(),mn=+$("#bMin").value||0;
-  let rows=S.P.filter(p=>p.pos!=="G"&&p.games===1&&p.mp>=mn&&(!bt||p.club===bt)&&(!q||p.name.toLowerCase().includes(q))&&p.av>0.05);
+  let rows=BS.P.filter(p=>p.pos!=="G"&&p.games===1&&p.mp>=mn&&(!bt||p.club===bt)&&(!q||p.name.toLowerCase().includes(q))&&p.av>0.05);
   rows=sortRows(rows,S.sortB);
   const cols=[["name","Pelaaja","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["mp","Pisteet"],["p_pts1","Piste"],["p_pts2","2+ pistettä"],["p_goal","Maali"],["p_sog3","3+ laukausta"],["p_sog4","4+ laukausta"]];
   $("#btPlayers").innerHTML=th(cols,S.sortB,"B")+"<tbody>"+rows.slice(0,300).map(p=>`<tr><td class="l pn">${esc(p.name)}${p.av<0.9?' <span class="pill warn">epävarma</span>':""}</td><td class="l">${esc(p.club)}</td><td class="l">${esc(p.opp)}</td><td class="num">${f2(p.mp)}</td>
     ${PROPS.map(([k])=>oddsCell(p.id+"|"+k,p["p_"+k])).join("")}</tr>`).join("")+"</tbody>";
   // omat kertoimet
   const list=Object.entries(S.odds).map(([key,o])=>{const [who,mk]=key.split("|");let label,pr;
-    if(/^\d+$/.test(who)){const p=S.byId[+who];if(!p)return null;const pd=PROPS.find(x=>x[0]===mk);label=p.name+" · "+(pd?pd[1]:mk);pr=p["p_"+mk]}
-    else{const g=S.games.find(g=>`${g.home}-${g.away}`===who);if(!g)return null;const pm=gameProbs(g.lhm,g.lam);
+    if(/^\d+$/.test(who)){const p=BS.byId[+who]||S.byId[+who];if(!p)return null;const pd=PROPS.find(x=>x[0]===mk);label=p.name+" · "+(pd?pd[1]:mk);pr=p["p_"+mk]}
+    else{const g=BS.games.find(g=>`${g.home}-${g.away}`===who);if(!g)return null;const pm=gameProbs(g.lhm,g.lam);
       label=who.replace("-","–")+" · "+({koti:"Kotivoitto",vieras:"Vierasvoitto","yli5.5":"Yli 5.5 maalia","alle5.5":"Alle 5.5 maalia","yli6.5":"Yli 6.5 maalia","alle6.5":"Alle 6.5 maalia"}[mk]||mk);
       pr=mk==="koti"?pm.home:mk==="vieras"?pm.away:mk.startsWith("yli")?overP(g.lhm,g.lam,+mk.slice(3)):1-overP(g.lhm,g.lam,+mk.slice(4))}
     return {key,label,p:pr,o,e:pr*o-1}}).filter(Boolean).sort((a,b)=>b.e-a.e);
@@ -909,7 +922,8 @@ async function fetchLatest(){try{const r=await fetch("data/latest.json?t="+Date.
   const ds=await r.json();if(ds&&ds.players&&(!S.ds||ds.updated!==S.ds.updated))useDataset(ds)}catch(e){}}
 async function fetchTrack(){try{const r=await fetch("data/tracking.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;
   const t=await r.json();if(t&&(!S.track||t.updated!==S.track.updated))useTrack(t)}catch(e){}}
-fetchLatest();fetchTrack();setInterval(()=>{fetchLatest();fetchTrack()},5*60*1000);
+async function fetchBets(){try{const r=await fetch("data/bets.json?t="+Date.now(),{cache:"no-store"});if(!r.ok)return;useBets(await r.json())}catch(e){}}
+fetchLatest();fetchTrack();fetchBets();setInterval(()=>{fetchLatest();fetchTrack();fetchBets()},5*60*1000);
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)fetchLatest()});
 })();
 </script>
