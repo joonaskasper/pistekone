@@ -217,6 +217,13 @@ td.cell.has{background:var(--goal-soft)}
 #detailHead{scroll-margin-top:84px}
 @media (max-width:600px){.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .lu{padding:22px 2px}.lu-big .pts{font-size:80px}.hero-head .levels{gap:28px}}
+
+/* arvovetojen vetotyypit */
+.seg{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--rule-2)}
+.seg-b{font:500 13.5px var(--f-body);background:none;border:0;border-bottom:3px solid transparent;color:var(--ink-2);padding:10px 14px 9px;cursor:pointer;margin-bottom:-1px}
+.seg-b:hover{color:var(--ink)}
+.seg-b[aria-pressed="true"]{color:var(--ink);border-bottom-color:var(--goal)}
+.seg-b .muted{font:700 14px var(--f-display);margin-left:4px}
 </style>
 </head>
 <body>
@@ -298,7 +305,7 @@ td.cell.has{background:var(--goal-soft)}
 
   <!-- VEDONLYÖNTI -->
   <section id="tab-bets" class="stack" hidden>
-    <div><h2>Vedonlyönti</h2><p class="lede">Mallin todennäköisyys ja reilu kerroin (1 / todennäköisyys). Klikkaa solua ja syötä vedonvälittäjän kerroin, niin näet arvon (todennäköisyys × kerroin − 1). Pelaajien luvut olettavat, että pelaaja pelaa. Pinnacle on tarkka markkina: suuri ero siihen on useammin mallin virhe kuin etu. Tämä ei ole peliohje.</p></div>
+    <div><h2>Vedonlyönti</h2><p class="lede">Mallin todennäköisyys ja reilu kerroin (1 / todennäköisyys). Kun ajat run_betting.bat, Pafin kertoimet haetaan automaattisesti ja arvovedot listataan alla. Oman kertoimen voi syöttää klikkaamalla solua. Pelaajien luvut olettavat, että pelaaja pelaa. Pinnacle on tarkka markkina: suuri ero siihen on useammin mallin virhe kuin etu. Tämä ei ole peliohje.</p></div>
     <p class="muted" id="betSrc" style="margin:0"></p>
     <div class="panel stack" id="myOdds"></div>
     <h3>Ottelut</h3>
@@ -758,12 +765,14 @@ function renderGames(){
     <dt>Yli 5.5 / 6.5</dt><dd>${pct(overP(lh,la,5.5))} / ${pct(overP(lh,la,6.5))}</dd>
     <dt>Malli ilman kertoimia</dt><dd>${f2(g.lhm)}–${f2(g.lam)}, koti ${pct(pm.home)}</dd></dl></article>`}).join("");
 }
-function oddsCell(key,p){const o=S.odds[key];const e=o?p*o-1:null;
-  return `<td class="cell${o?" has":""}" data-odds="${esc(key)}" data-p="${p}" tabindex="0" title="Syötä kerroin"><span class="pc">${pct(p)}</span><span class="oc">${fair(p)}${o?` · ${o.toFixed(2)} <span class="edge ${e>0?"pos":"neg"}">${(e*100>0?"+":"")+(e*100).toFixed(0)}%</span>`:""}</span></td>`}
+function pafOdds(key){const B=S.bets&&S.ds&&S.bets.date===S.ds.date?S.bets:null;const v=B&&B.paf[key];return v?{o:v[0],ov:v[1]}:null}
+function oddsCell(key,p){const pf=pafOdds(key),o=S.odds[key]||(pf&&pf.o);const e=o?p*o-1:null,own=!!S.odds[key];
+  return `<td class="cell${o?" has":""}" data-odds="${esc(key)}" data-p="${p}" tabindex="0" title="${own?"Oma kerroin":pf?"Pafin kerroin":"Syötä kerroin"}"><span class="pc">${pct(p)}</span><span class="oc">${fair(p)}${o?` · ${o.toFixed(2)}${own?"":" P"} <span class="edge ${e>0?"pos":"neg"}">${(e*100>0?"+":"")+(e*100).toFixed(0)}%</span>`:""}</span></td>`}
 function mapPlayers(F,rows){return rows.map(r=>{const o={};F.forEach((k,i)=>o[k]=r[i]);o.name=(o.fn+" "+o.ln).trim();o.pp=o.pp||0;o.av=o.av??1;o.x=o.x||0;
     o.ppx=o.price>0?o.x/o.price:0;if(o.pos!=="G"&&o.games===1)for(const [k,,f] of PROPS)o["p_"+k]=f(o);return o})}
 function useBets(b){if(!b||!b.players||!b.fields)return;if(S.bets&&S.bets.updated===b.updated)return;const P=mapPlayers(b.fields,b.players);
-  S.bets={date:b.date,updated:b.updated,P,byId:Object.fromEntries(P.map(p=>[p.id,p])),games:(b.games||[]).map(r=>{const o={};b.gfields.forEach((k,i)=>o[k]=r[i]);return o})};
+  S.bets={date:b.date,updated:b.updated,P,byId:Object.fromEntries(P.map(p=>[p.id,p])),games:(b.games||[]).map(r=>{const o={};b.gfields.forEach((k,i)=>o[k]=r[i]);return o}),
+    paf:(b.paf&&b.paf.o)||{},pafAt:b.paf&&b.paf.fetched};
   if(S.ds)renderBets()}
 function betSet(){const B=S.bets&&S.ds&&S.bets.date===S.ds.date?S.bets:null;
   return B?{P:B.P,byId:B.byId,games:B.games.length?B.games:S.games,all:true,upd:B.updated}:{P:S.P,byId:S.byId,games:S.games,all:false}}
@@ -787,17 +796,34 @@ function renderBets(){
   const cols=[["name","Pelaaja","l"],["club","Jouk.","l"],["opp","Ottelu","l"],["mp","Pisteet"],["p_pts1","Piste"],["p_pts2","2+ pistettä"],["p_goal","Maali"],["p_sog3","3+ laukausta"],["p_sog4","4+ laukausta"]];
   $("#btPlayers").innerHTML=th(cols,S.sortB,"B")+"<tbody>"+rows.slice(0,300).map(p=>`<tr><td class="l pn">${esc(p.name)}${p.av<0.9?' <span class="pill warn">epävarma</span>':""}</td><td class="l">${esc(p.club)}</td><td class="l">${esc(p.opp)}</td><td class="num">${f2(p.mp)}</td>
     ${PROPS.map(([k])=>oddsCell(p.id+"|"+k,p["p_"+k])).join("")}</tr>`).join("")+"</tbody>";
-  // omat kertoimet
-  const list=Object.entries(S.odds).map(([key,o])=>{const [who,mk]=key.split("|");let label,pr;
-    if(/^\d+$/.test(who)){const p=BS.byId[+who]||S.byId[+who];if(!p)return null;const pd=PROPS.find(x=>x[0]===mk);label=p.name+" · "+(pd?pd[1]:mk);pr=p["p_"+mk]}
-    else{const g=BS.games.find(g=>`${g.home}-${g.away}`===who);if(!g)return null;const pm=gameProbs(g.lhm,g.lam);
-      label=who.replace("-","–")+" · "+({koti:"Kotivoitto",vieras:"Vierasvoitto","yli5.5":"Yli 5.5 maalia","alle5.5":"Alle 5.5 maalia","yli6.5":"Yli 6.5 maalia","alle6.5":"Alle 6.5 maalia"}[mk]||mk);
-      pr=mk==="koti"?pm.home:mk==="vieras"?pm.away:mk.startsWith("yli")?overP(g.lhm,g.lam,+mk.slice(3)):1-overP(g.lhm,g.lam,+mk.slice(4))}
-    return {key,label,p:pr,o,e:pr*o-1}}).filter(Boolean).sort((a,b)=>b.e-a.e);
-  $("#myOdds").innerHTML=`<div class="row" style="justify-content:space-between"><h3>Omat kertoimet</h3>${list.length?'<button class="btn small" data-act="clearodds">Tyhjennä</button>':""}</div>`+
-    (list.length?`<div class="tw"><table><thead><tr><th class="l">Kohde</th><th>Mallin tod.</th><th>Reilu</th><th>Kerroin</th><th>Arvo</th><th></th></tr></thead><tbody>${list.map(x=>`<tr><td class="l">${esc(x.label)}</td><td class="num">${pct(x.p)}</td><td class="num">${fair(x.p)}</td><td class="num">${x.o.toFixed(2)}</td><td class="edge ${x.e>0?"pos":"neg"}">${(x.e>0?"+":"")+(x.e*100).toFixed(1)} %</td><td><button class="btn small" data-delodds="${esc(x.key)}">Poista</button></td></tr>`).join("")}</tbody></table></div>
-    <p class="muted" style="margin:0">Jätä varmuusmarginaali: malli on kalibroitu muutaman prosentin tarkkuudelle, joten pieni positiivinen arvo ei vielä tarkoita etua.</p>`:'<span class="muted">Klikkaa taulukon solua ja syötä vedonvälittäjän kerroin. Kertoimet tallentuvat vain tähän selaimeen.</span>');
+  // arvovedot: Pafin kertoimet (run_betting.bat) ja omat kertoimet
+  const MKN={pts1:"Piste (yli 0,5)",pts2:"2+ pistettä",goal:"Maali",sog3:"3+ laukausta",sog4:"4+ laukausta",koti:"Kotivoitto",vieras:"Vierasvoitto","yli5.5":"Yli 5,5 maalia","alle5.5":"Alle 5,5 maalia","yli6.5":"Yli 6,5 maalia","alle6.5":"Alle 6,5 maalia"};
+  const GRP={pts1:"pts1",pts2:"pts2",goal:"goal",sog3:"sog3",sog4:"sog4"};
+  const probOf=(who,mk)=>{if(/^\d+$/.test(who)){const p=BS.byId[+who]||S.byId[+who];if(!p||p.av<0.5)return null;return {p:p["p_"+mk],label:p.name,club:p.club,opp:p.opp}}
+    const g=BS.games.find(g=>`${g.home}-${g.away}`===who);if(!g)return null;const pm=gameProbs(g.lhm,g.lam);
+    const pr=mk==="koti"?pm.home:mk==="vieras"?pm.away:mk.startsWith("yli")?overP(g.lhm,g.lam,+mk.slice(3)):1-overP(g.lhm,g.lam,+mk.slice(4));return {p:pr,label:who.replace("-","–"),club:"",opp:""}};
+  const B=S.bets&&S.ds&&S.bets.date===S.ds.date?S.bets:null,keys=new Set([...Object.keys(B?B.paf:{}),...Object.keys(S.odds)]);
+  const vMin=+load("vMin",5),vMk=load("vMk","");
+  const all=[...keys].map(key=>{const [who,mk]=key.split("|");const m=probOf(who,mk);if(!m||m.p==null||isNaN(m.p))return null;const pf=B&&B.paf[key],own=S.odds[key];
+    const o=own||(pf&&pf[0]);if(!o)return null;const ov=!own&&pf?pf[1]:null,pp=ov?(1/o)/((1/o)+(1/ov)):null;
+    return {key,label:m.label,club:m.club,opp:m.opp,mk,grp:GRP[mk]||"o",p:m.p,o,pp,own:!!own,e:m.p*o-1}}).filter(Boolean);
+  const list=all.filter(x=>(x.own||x.e*100>=vMin)&&(!vMk||x.grp===vMk)).sort((a,b)=>b.e-a.e);
+  const nPaf=B?Object.keys(B.paf).length:0;
+  const head=`<div class="row" style="justify-content:space-between;align-items:flex-end"><div><h3>Arvovedot</h3><p class="muted" style="margin:4px 0 0">${nPaf?`Pafin kertoimet haettu ${String(B.pafAt||"").replace("T"," klo ")}, ${nPaf} kerrointa. Arvo = mallin todennäköisyys × kerroin − 1.`:"Pafin kertoimet tulevat tähän, kun ajat run_betting.bat. Voit myös syöttää kertoimen klikkaamalla taulukon solua."}</p></div>
+    <div class="ctrls"><div class="ctrl"><label for="vMin">Arvo vähintään (%)</label><input id="vMin" type="number" step="1" value="${vMin}"></div>
+    ${Object.keys(S.odds).length?'<button class="btn small" data-act="clearodds">Tyhjennä omat</button>':""}</div></div>`;
+  const VT=[["","Kaikki"],["pts1","Yli 0,5 p"],["pts2","Yli 1,5 p"],["goal","Maalintekijä"],["sog3","3+ laukausta"],["sog4","4+ laukausta"],["o","Ottelut"]];
+  const cnt=k=>all.filter(x=>(x.own||x.e*100>=vMin)&&(!k||x.grp===k)).length;
+  const seg=`<div class="seg" role="group" aria-label="Vedon tyyppi">${VT.map(([v,l])=>`<button type="button" class="seg-b" data-vmk="${v}" aria-pressed="${v===vMk}">${l} <span class="muted">${cnt(v)}</span></button>`).join("")}</div>`;
+  $("#myOdds").innerHTML=head+seg+(list.length?`<div class="tw" style="max-height:60vh"><table><thead><tr><th class="l">Kohde</th><th class="l">Veto</th><th>Malli</th><th title="Pafin kertoimista katteen poiston jälkeen (kun Paf tarjoaa myös vastavedon)">Paf</th><th>Reilu</th><th>Kerroin</th><th>Arvo</th><th></th></tr></thead><tbody>${list.slice(0,60).map(x=>{const gap=x.pp!=null?x.p-x.pp:null;
+      return `<tr><td class="l"><span class="pn">${esc(x.label)}</span>${x.club?` <span class="muted">${esc(x.club)} ${esc(x.opp)}</span>`:""}</td><td class="l">${MKN[x.mk]||esc(x.mk)}</td><td class="num">${pct(x.p)}</td>
+      <td class="num">${x.pp!=null?pct(x.pp)+(Math.abs(gap)>=0.1?' <span class="pill warn" title="Malli ja Paf ovat paljon eri mieltä: ero johtuu useammin mallista kuin Pafista">iso ero</span>':""):"–"}</td><td class="num">${fair(x.p)}</td><td class="num">${x.o.toFixed(2)}${x.own?' <span class="muted">oma</span>':""}</td>
+      <td class="edge ${x.e>0?"pos":"neg"}">${(x.e>0?"+":"")+(x.e*100).toFixed(1).replace(".",",")} %</td><td>${x.own?`<button class="btn small" data-delodds="${esc(x.key)}">Poista</button>`:""}</td></tr>`}).join("")}</tbody></table></div>
+    <p class="muted" style="margin:0">Pelaajien luvut olettavat, että pelaaja pelaa: tarkista kokoonpanot ennen vetoa. Kertoimet ovat hakuhetken tilannekuva. Malli on kalibroitu muutaman prosentin tarkkuudelle, joten pieni arvo ei vielä tarkoita etua, ja kun malli ja Paf ovat hyvin eri mieltä, virhe on useammin mallissa. Tämä ei ole peliohje.</p>`
+    :`<p class="muted" style="margin:0">${all.length?`Ei vetoja, joiden arvo on vähintään ${vMin} %.`:"Ei kertoimia vielä."}</p>`);
 }
+document.addEventListener("input",e=>{if(e.target.id==="vMin"){store("vMin",+e.target.value||0);renderBets();const el=$("#vMin");if(el){el.focus();const v=el.value;el.value="";el.value=v}}});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-vmk]");if(b){store("vMk",b.dataset.vmk);renderBets()}});
 function renderAll(){renderLineup();renderPlayers();renderGoalies();renderGames();renderBets();renderTrack()}
 // ---------- seuranta ----------
 function useTrack(t){if(!t||t.kind!=="tracking")return;S.track=t;try{localStorage.setItem("pk:track",JSON.stringify(t))}catch(e){};renderTrack()}
